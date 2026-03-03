@@ -1,0 +1,1992 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MP2I — 4.5 Algorithmique des graphes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Barlow+Condensed:wght@300;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:     #080e14;
+  --bg2:    #0d1520;
+  --bg3:    #121d2b;
+  --border: #1a2d3e;
+  --accent: #1dd8b0;   /* teal — réseau, connexion */
+  --a2:     #f5a623;   /* or   — chemin optimal */
+  --a3:     #e05c6a;   /* rouge — arêtes visitées */
+  --a4:     #7b9ef0;   /* bleu  — ACM / Prim */
+  --a5:     #a8e063;   /* vert  — sommet découvert */
+  --text:   #b8cfe0;
+  --dim:    #3d5c72;
+  --mono:   'DM Mono', monospace;
+  --serif:  'Crimson Pro', serif;
+  --cond:   'Barlow Condensed', sans-serif;
+  --r:      6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--serif);font-size:17px;line-height:1.65;min-height:100vh}
+
+/* progress */
+#prog{position:fixed;top:0;left:0;height:3px;width:0%;background:linear-gradient(90deg,var(--accent),var(--a4));z-index:1000;transition:width .15s;box-shadow:0 0 8px var(--accent)}
+
+/* ── HEADER ── */
+header{
+  background:var(--bg);
+  border-bottom:1px solid var(--border);
+  padding:3.5rem 2rem 2.5rem;
+  text-align:center;position:relative;overflow:hidden;
+}
+/* animated node network background */
+header::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(circle at 20% 50%, rgba(29,216,176,.04) 0%, transparent 50%),
+    radial-gradient(circle at 80% 30%, rgba(123,158,240,.04) 0%, transparent 40%),
+    radial-gradient(circle at 50% 100%, rgba(245,166,35,.03) 0%, transparent 40%);
+  pointer-events:none;
+}
+header::after{
+  content:'';position:absolute;inset:0;
+  background-image:radial-gradient(circle, rgba(29,216,176,.12) 1px, transparent 1px);
+  background-size:48px 48px;
+  opacity:.35;pointer-events:none;
+}
+.breadcrumb{font-family:var(--cond);font-size:.77rem;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-bottom:1rem;position:relative}
+.breadcrumb a{color:var(--a4);text-decoration:none}
+.breadcrumb a:hover{text-decoration:underline}
+h1{font-family:var(--cond);font-size:clamp(2.1rem,5.5vw,3.6rem);font-weight:900;color:#e8f4ff;line-height:1.0;margin-bottom:.6rem;position:relative;letter-spacing:-.02em}
+h1 em{font-style:italic;background:linear-gradient(90deg,var(--accent),var(--a4));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{font-family:var(--serif);font-size:1.05rem;color:var(--dim);font-style:italic;margin-bottom:1.5rem;position:relative}
+
+.pills{display:flex;gap:.45rem;justify-content:center;flex-wrap:wrap}
+.pill{font-family:var(--mono);font-size:.68rem;padding:.2rem .65rem;border-radius:20px;border:1px solid;letter-spacing:.06em}
+.p-s1{color:var(--a5);border-color:rgba(168,224,99,.3);background:rgba(168,224,99,.05)}
+.p-s2{color:var(--a4);border-color:rgba(123,158,240,.3);background:rgba(123,158,240,.05)}
+.p-c{color:var(--a2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.05)}
+.p-ml{color:var(--a4);border-color:rgba(123,158,240,.3);background:rgba(123,158,240,.05)}
+.p-g{color:var(--accent);border-color:rgba(29,216,176,.3);background:rgba(29,216,176,.05)}
+
+/* NAV */
+nav.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.6rem;max-width:900px;margin:0 auto;padding:2rem 1.5rem 0}
+.nav-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.65rem .85rem;cursor:pointer;transition:border-color .2s,background .2s;text-align:center}
+.nav-card:hover{border-color:var(--accent);background:rgba(29,216,176,.04)}
+.nc-num{font-family:var(--mono);font-size:.66rem;color:var(--accent);letter-spacing:.1em;display:block;margin-bottom:.18rem}
+.nc-title{font-family:var(--cond);font-size:.8rem;font-weight:500;color:var(--text);line-height:1.2}
+.vc{font-family:var(--mono);font-size:.72rem;color:var(--dim);text-align:right;padding:.45rem 1.5rem 0;max-width:900px;margin:0 auto}
+#seen-count{color:var(--accent)}
+
+main{max-width:900px;margin:0 auto;padding:0 1.5rem 4rem}
+
+/* SECTIONS */
+.section{border:1px solid var(--border);border-radius:10px;background:var(--bg2);margin-top:2rem;overflow:hidden}
+.section.seen{border-left:3px solid var(--accent)}
+.sh{display:flex;align-items:center;gap:1rem;padding:1.2rem 1.5rem;cursor:pointer;user-select:none;border-bottom:1px solid transparent;transition:background .2s}
+.sh:hover{background:rgba(255,255,255,.018)}
+.sh.open{border-bottom-color:var(--border)}
+.sn{font-family:var(--mono);font-size:.72rem;color:var(--accent);background:rgba(29,216,176,.08);border:1px solid rgba(29,216,176,.25);padding:.17rem .52rem;border-radius:4px;flex-shrink:0}
+.st{font-family:var(--cond);font-size:1.1rem;font-weight:500;color:#cce4ff;flex:1}
+.sa{font-size:.7rem;color:var(--dim);transition:transform .3s}
+.sa.open{transform:rotate(180deg)}
+.sb{padding:1.5rem;display:none}
+.sb.open{display:block}
+
+/* TYPO */
+h2{font-family:var(--cond);font-weight:700;font-size:1.35rem;color:var(--accent);letter-spacing:.03em;margin-bottom:.7rem;border-bottom:1px solid var(--border);padding-bottom:.35rem}
+h3{font-family:var(--cond);font-weight:500;font-size:1.05rem;color:var(--a4);margin:1.1rem 0 .45rem}
+p{margin-bottom:.75rem}
+strong{color:#d8eebb;font-weight:600}
+em{color:var(--a2);font-style:italic}
+code{font-family:var(--mono);font-size:.8em;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.09);border-radius:3px;padding:.08em .38em;color:var(--a2)}
+ul{margin:.45rem 0 .75rem 1.1rem}
+ul li{margin-bottom:.28rem}
+
+.callout{border-left:3px solid var(--accent);background:rgba(29,216,176,.04);padding:.7rem 1rem;border-radius:0 var(--r) var(--r) 0;margin:.85rem 0;font-size:.91rem}
+.c-gold{border-left-color:var(--a2);background:rgba(245,166,35,.04)}
+.c-red{border-left-color:var(--a3);background:rgba(224,92,106,.04)}
+.c-blue{border-left-color:var(--a4);background:rgba(123,158,240,.04)}
+.c-green{border-left-color:var(--a5);background:rgba(168,224,99,.04)}
+.ct{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:.28rem}
+.c-gold .ct{color:var(--a2)}.c-red .ct{color:var(--a3)}.c-blue .ct{color:var(--a4)}.c-green .ct{color:var(--a5)}
+
+.tbl{overflow-x:auto;margin:.85rem 0}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{background:var(--bg3);color:var(--accent);font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;padding:.55rem .9rem;text-align:left;border-bottom:2px solid var(--border)}
+td{padding:.5rem .9rem;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.01)}
+.ok{color:var(--a5);font-family:var(--mono)}.warn{color:var(--a2);font-family:var(--mono)}.bad{color:var(--a3);font-family:var(--mono)}
+
+/* GRAPH CANVAS */
+.graph-area{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:0;margin:.75rem 0;overflow:hidden;position:relative}
+.graph-area canvas{display:block;max-width:100%;cursor:crosshair}
+.graph-overlay{position:absolute;top:.5rem;right:.5rem;font-family:var(--mono);font-size:.7rem;color:var(--dim);text-align:right;pointer-events:none}
+
+/* VIZ TABS */
+.vtabs{display:flex;gap:.3rem;margin-bottom:.85rem;flex-wrap:wrap}
+.vtab{font-family:var(--mono);font-size:.72rem;padding:.28rem .75rem;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--dim);cursor:pointer;transition:all .15s}
+.vtab.active{border-color:var(--accent);color:var(--accent);background:rgba(29,216,176,.07)}
+.vpanel{display:none}.vpanel.active{display:block}
+
+/* STATS ROW */
+.stats-row{display:flex;gap:1.2rem;flex-wrap:wrap;font-family:var(--mono);font-size:.76rem;margin:.6rem 0}
+.stat{display:flex;flex-direction:column;gap:.12rem}
+.sl{color:var(--dim);font-size:.64rem;text-transform:uppercase;letter-spacing:.07em}
+.sv{color:var(--a2);font-size:1.05rem}
+
+/* ALGORITHM LOG */
+.algo-log{font-family:var(--mono);font-size:.76rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:.65rem .85rem;margin-top:.6rem;min-height:2.2rem;max-height:130px;overflow-y:auto;line-height:1.8}
+.log-step{color:var(--a5)}.log-visit{color:var(--accent)}.log-relax{color:var(--a2)}.log-back{color:var(--dim)}.log-done{color:var(--a5);font-weight:500}
+
+/* DISTANCE TABLE */
+.dist-table{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem}
+.dist-cell{font-family:var(--mono);font-size:.76rem;padding:.28rem .6rem;border-radius:3px;border:1px solid var(--border);background:var(--bg3)}
+.dist-cell.reached{border-color:var(--accent);color:var(--accent);background:rgba(29,216,176,.07)}
+.dist-cell.source{border-color:var(--a2);color:var(--a2);background:rgba(245,166,35,.1)}
+
+/* BTNS */
+.btn{font-family:var(--mono);font-size:.74rem;padding:.32rem .78rem;border-radius:var(--r);border:1px solid;cursor:pointer;transition:all .13s;letter-spacing:.04em}
+.bt{color:var(--accent);border-color:rgba(29,216,176,.4);background:rgba(29,216,176,.07)}.bt:hover{background:rgba(29,216,176,.16)}
+.bg{color:var(--a5);border-color:rgba(168,224,99,.4);background:rgba(168,224,99,.07)}.bg:hover{background:rgba(168,224,99,.16)}
+.by{color:var(--a2);border-color:rgba(245,166,35,.4);background:rgba(245,166,35,.07)}.by:hover{background:rgba(245,166,35,.16)}
+.bb{color:var(--a4);border-color:rgba(123,158,240,.4);background:rgba(123,158,240,.07)}.bb:hover{background:rgba(123,158,240,.16)}
+.br{color:var(--a3);border-color:rgba(224,92,106,.4);background:rgba(224,92,106,.07)}.br:hover{background:rgba(224,92,106,.16)}
+.bd{color:var(--dim);border-color:var(--border);background:transparent}.bd:hover{color:var(--text);border-color:var(--dim)}
+.ctrl{display:flex;gap:.45rem;flex-wrap:wrap;align-items:center;margin-bottom:.65rem}
+
+/* SPEED SLIDER */
+.srow{display:flex;align-items:center;gap:.65rem;font-family:var(--mono);font-size:.76rem}
+.srow label{color:var(--dim);min-width:80px}
+input[type=range]{flex:1;accent-color:var(--accent)}
+.sv2{color:var(--a2);min-width:38px}
+
+/* LANG / CODE */
+.ltabs{display:flex;gap:0;margin:1rem 0 0;border-bottom:1px solid var(--border)}
+.ltab{font-family:var(--mono);font-size:.74rem;padding:.45rem .95rem;cursor:pointer;border:1px solid transparent;border-bottom:none;border-radius:4px 4px 0 0;color:var(--dim);background:transparent;margin-bottom:-1px;transition:all .13s}
+.ltab.c-tab.active{color:var(--a2);border-color:var(--border);border-bottom-color:var(--bg2);background:var(--bg2)}
+.ltab.ml-tab.active{color:var(--a4);border-color:var(--border);border-bottom-color:var(--bg2);background:var(--bg2)}
+.lpane{display:none}.lpane.active{display:block}
+
+.cb{margin:.85rem 0;border-radius:var(--r);border:1px solid var(--border);overflow:hidden}
+.ch{display:flex;align-items:center;gap:.5rem;padding:.48rem .9rem;background:var(--bg3);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.clang{font-family:var(--mono);font-size:.67rem;padding:.12rem .48rem;border-radius:3px;text-transform:uppercase;letter-spacing:.07em;font-weight:500}
+.lc{color:var(--a2);background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.22)}
+.lml{color:var(--a4);background:rgba(123,158,240,.1);border:1px solid rgba(123,158,240,.22)}
+.cfn{font-family:var(--mono);font-size:.72rem;color:var(--dim);flex:1}
+.ca{display:flex;gap:.32rem;margin-left:auto}
+.ce{font-family:var(--mono);font-size:.78rem;background:var(--bg);color:var(--text);border:none;outline:none;resize:vertical;width:100%;padding:.9rem;line-height:1.58;tab-size:2;min-height:210px;caret-color:var(--accent)}
+.co{border-top:1px solid var(--border);background:#060b10;padding:.65rem .9rem;font-family:var(--mono);font-size:.76rem;color:#88c888;white-space:pre-wrap;min-height:2.2rem;display:none}
+.co.visible{display:block}
+
+/* QCM */
+.qp{font-family:var(--mono);font-size:.7rem;color:var(--dim);margin-bottom:.9rem}
+.qq{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.2rem;margin-bottom:.9rem}
+.qq p{margin-bottom:.7rem;font-size:.94rem}
+.qo{display:flex;align-items:center;gap:.6rem;padding:.4rem .68rem;border-radius:var(--r);cursor:pointer;margin-bottom:.3rem;border:1px solid var(--border);background:var(--bg);transition:all .13s;font-size:.87rem}
+.qo:hover{border-color:var(--a4);background:rgba(123,158,240,.05)}
+.qo.correct{border-color:var(--a5);background:rgba(168,224,99,.08);color:var(--a5)}
+.qo.wrong{border-color:var(--a3);background:rgba(224,92,106,.08);color:var(--a3)}
+.qo input{accent-color:var(--a5)}
+.qex{font-size:.82rem;font-style:italic;color:var(--dim);margin-top:.45rem;padding:.45rem .68rem;background:var(--bg);border-left:3px solid var(--border);border-radius:0 3px 3px 0}
+.qctrl{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.45rem}
+.sbar{height:6px;border-radius:4px;background:var(--border);margin:.45rem 0;overflow:hidden}
+.sfill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--a4));transition:width .4s}
+
+/* contact */
+.cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:1rem;margin-top:1rem}
+.cc{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.9rem;text-align:center}
+.ci{font-size:1.4rem;display:block;margin-bottom:.35rem}
+.ct2{font-family:var(--cond);font-weight:500;color:var(--a4)}
+.cs{font-size:.78rem;color:var(--dim);margin:.18rem 0 .55rem}
+.cc img{width:105px;height:105px;margin:.45rem auto;display:block}
+.cl{font-family:var(--mono);font-size:.69rem;color:var(--accent);text-decoration:none}
+.cl:hover{text-decoration:underline}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+<div id="prog"></div>
+
+<header>
+  <div class="breadcrumb">
+    <a href="#">MP2I / MPI — Informatique</a> ›
+    <a href="#">4. Algorithmique</a> ›
+    4.5 Algorithmique des graphes
+  </div>
+  <h1>Algorithmique<br><em>des Graphes</em></h1>
+  <p class="subtitle">BFS, DFS, Dijkstra, Bellman-Ford, Floyd-Warshall, Kruskal, Prim — parcours, chemins et arbres couvrants.</p>
+  <div class="pills">
+    <span class="pill p-s1">S1</span>
+    <span class="pill p-s2">S2</span>
+    <span class="pill p-g">Graphes</span>
+    <span class="pill p-c">C99</span>
+    <span class="pill p-ml">OCaml</span>
+  </div>
+</header>
+
+<nav class="cards">
+  <div class="nav-card" onclick="openS(0)"><span class="nc-num">01</span><span class="nc-title">Programme officiel</span></div>
+  <div class="nav-card" onclick="openS(1)"><span class="nc-num">02</span><span class="nc-title">Simulateurs interactifs</span></div>
+  <div class="nav-card" onclick="openS(2)"><span class="nc-num">03</span><span class="nc-title">Cours — Rappels</span></div>
+  <div class="nav-card" onclick="openS(3)"><span class="nc-num">04</span><span class="nc-title">Code C &amp; OCaml</span></div>
+  <div class="nav-card" onclick="openS(4)"><span class="nc-num">05</span><span class="nc-title">Auto-évaluation</span></div>
+  <div class="nav-card" onclick="openS(5)"><span class="nc-num">06</span><span class="nc-title">Contact</span></div>
+</nav>
+<div class="vc"><span id="seen-count">0</span> / 6 vus</div>
+
+<main>
+
+<!-- ═══════════════════════ 01 PROGRAMME ═══════════════════════ -->
+<div class="section" id="sec-0">
+  <div class="sh" onclick="toggleS(0)"><span class="sn">01</span><span class="st">Notions du programme officiel</span><span class="sa" id="a0">▼</span></div>
+  <div class="sb" id="b0">
+    <p>Extrait exact du <strong>BO 2021</strong> — section <strong>4.5 Algorithmique des graphes</strong>.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Notion</th><th>Commentaires officiels</th><th>Période</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Représentation des graphes</strong> — matrice d'adjacence, listes d'adjacence</td><td>On compare les deux représentations selon les opérations (accès arête, liste voisins, espace mémoire). Graphes orientés et non-orientés.</td><td><span class="pill p-s1" style="font-size:.68rem">S1</span></td></tr>
+        <tr><td><strong>Parcours en largeur (BFS)</strong> — plus court chemin non pondéré</td><td>Utilisation d'une file. Complexité O(V+E). Calcul des distances minimales depuis une source.</td><td><span class="pill p-s1" style="font-size:.68rem">S1</span></td></tr>
+        <tr><td><strong>Parcours en profondeur (DFS)</strong> — détection de cycles, composantes connexes</td><td>Utilisation d'une pile (récursion). Complexité O(V+E). Tri topologique pour graphes orientés acycliques (DAG).</td><td><span class="pill p-s1" style="font-size:.68rem">S1</span></td></tr>
+        <tr><td><strong>Algorithme de Dijkstra</strong> — plus court chemin pondéré (poids positifs)</td><td>File de priorité (tas min). Complexité O((V+E) log V). Précondition : poids strictement positifs.</td><td><span class="pill p-s2" style="font-size:.68rem">S2</span></td></tr>
+        <tr><td><strong>Algorithme de Bellman-Ford</strong> — poids négatifs, détection de cycle négatif</td><td>Complexité O(V·E). Permet les poids négatifs, détecte les cycles absorbants.</td><td><span class="pill p-s2" style="font-size:.68rem">S2</span></td></tr>
+        <tr><td><strong>Floyd-Warshall</strong> — plus courts chemins entre toutes paires</td><td>Programmation dynamique. Complexité O(V³). Détection de cycles négatifs.</td><td><span class="pill p-s2" style="font-size:.68rem">S2</span></td></tr>
+        <tr><td><strong>Arbre couvrant minimal</strong> — algorithmes de Kruskal et Prim</td><td>Kruskal : tri des arêtes + Union-Find. Prim : croissance depuis un sommet. Complexité O(E log E) et O((V+E) log V).</td><td><span class="pill p-s2" style="font-size:.68rem">S2</span></td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout"><div class="ct">Point clé</div>Le programme couvre <strong>toute la panoplie classique</strong> de l'algorithmique des graphes. Les deux représentations (matrice vs listes) sont exigibles, ainsi que leurs compromis. Les complexités sont à maîtriser.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ 02 SIMULATEURS ═══════════════════════ -->
+<div class="section" id="sec-1">
+  <div class="sh" onclick="toggleS(1)"><span class="sn">02</span><span class="st">Simulateurs interactifs</span><span class="sa" id="a1">▼</span></div>
+  <div class="sb" id="b1">
+    <div class="vtabs">
+      <button class="vtab active" onclick="showViz('bfs')">BFS</button>
+      <button class="vtab" onclick="showViz('dfs')">DFS</button>
+      <button class="vtab" onclick="showViz('dijkstra')">Dijkstra</button>
+      <button class="vtab" onclick="showViz('bellman')">Bellman-Ford</button>
+      <button class="vtab" onclick="showViz('kruskal')">Kruskal / Prim</button>
+    </div>
+
+    <!-- BFS -->
+    <div class="vpanel active" id="vp-bfs">
+      <p style="font-size:.88rem;margin-bottom:.65rem">Cliquez sur un sommet source pour lancer le BFS. Observez la découverte niveau par niveau.</p>
+      <div class="ctrl">
+        <button class="btn bt" onclick="bfsStart()">▶ BFS depuis source</button>
+        <button class="btn bd" onclick="graphReset('bfs')">↺ Reset</button>
+        <button class="btn bd" onclick="graphNew('bfs')">⊞ Nouveau graphe</button>
+        <div class="srow" style="flex:1"><label>Vitesse :</label><input type="range" id="bfs-spd" min="100" max="900" value="500"><span class="sv2" id="bfs-spd-v">500</span></div>
+      </div>
+      <div class="graph-area"><canvas id="bfs-canvas" width="840" height="340"></canvas><div class="graph-overlay" id="bfs-overlay">Cliquez un sommet</div></div>
+      <div class="stats-row">
+        <div class="stat"><span class="sl">Sommets visités</span><span class="sv" id="bfs-vis">0</span></div>
+        <div class="stat"><span class="sl">Niveau courant</span><span class="sv" id="bfs-lvl">0</span></div>
+        <div class="stat"><span class="sl">File (taille)</span><span class="sv" id="bfs-q">0</span></div>
+      </div>
+      <div class="algo-log" id="bfs-log"><span class="log-back">— Sélectionnez un sommet source —</span></div>
+      <div class="dist-table" id="bfs-dist"></div>
+    </div>
+
+    <!-- DFS -->
+    <div class="vpanel" id="vp-dfs">
+      <p style="font-size:.88rem;margin-bottom:.65rem">Parcours en profondeur — observez la pile d'appels, les temps de découverte/fin, la détection de cycles.</p>
+      <div class="ctrl">
+        <button class="btn bt" onclick="dfsStart()">▶ DFS</button>
+        <button class="btn bb" onclick="dfsTopoSort()">⇅ Tri topologique</button>
+        <button class="btn bd" onclick="graphReset('dfs')">↺ Reset</button>
+        <button class="btn bd" onclick="graphNew('dfs')">⊞ Nouveau graphe</button>
+        <div class="srow" style="flex:1"><label>Vitesse :</label><input type="range" id="dfs-spd" min="100" max="900" value="500"><span class="sv2" id="dfs-spd-v">500</span></div>
+      </div>
+      <div class="graph-area"><canvas id="dfs-canvas" width="840" height="340"></canvas></div>
+      <div class="stats-row">
+        <div class="stat"><span class="sl">Sommets visités</span><span class="sv" id="dfs-vis">0</span></div>
+        <div class="stat"><span class="sl">Cycle détecté</span><span class="sv" id="dfs-cycle">—</span></div>
+        <div class="stat"><span class="sl">Composantes</span><span class="sv" id="dfs-comp">0</span></div>
+      </div>
+      <div class="algo-log" id="dfs-log"><span class="log-back">— Appuyez sur ▶ DFS —</span></div>
+    </div>
+
+    <!-- DIJKSTRA -->
+    <div class="vpanel" id="vp-dijkstra">
+      <p style="font-size:.88rem;margin-bottom:.65rem">Plus court chemin depuis la source (poids positifs). <strong>Cliquez</strong> un sommet source, puis <strong>cliquez</strong> un sommet cible pour afficher le chemin.</p>
+      <div class="ctrl">
+        <button class="btn bt" onclick="dijkStart()">▶ Dijkstra</button>
+        <button class="btn bd" onclick="graphReset('dijkstra')">↺ Reset</button>
+        <button class="btn bd" onclick="graphNew('dijkstra')">⊞ Nouveau graphe</button>
+        <div class="srow" style="flex:1"><label>Vitesse :</label><input type="range" id="dijk-spd" min="80" max="800" value="400"><span class="sv2" id="dijk-spd-v">400</span></div>
+      </div>
+      <div class="graph-area"><canvas id="dijkstra-canvas" width="840" height="340"></canvas></div>
+      <div class="stats-row">
+        <div class="stat"><span class="sl">Relaxations</span><span class="sv" id="dijk-rel">0</span></div>
+        <div class="stat"><span class="sl">Sommets finalisés</span><span class="sv" id="dijk-fin">0</span></div>
+        <div class="stat"><span class="sl">Tas (taille)</span><span class="sv" id="dijk-heap">0</span></div>
+      </div>
+      <div class="algo-log" id="dijk-log"><span class="log-back">— Sélectionnez une source —</span></div>
+      <div class="dist-table" id="dijk-dist"></div>
+    </div>
+
+    <!-- BELLMAN-FORD -->
+    <div class="vpanel" id="vp-bellman">
+      <p style="font-size:.88rem;margin-bottom:.65rem">Bellman-Ford supporte les <strong>poids négatifs</strong> et détecte les cycles absorbants (V−1 passes + 1 pass de vérification).</p>
+      <div class="ctrl">
+        <button class="btn bt" onclick="bellmanStart()">▶ Bellman-Ford</button>
+        <button class="btn br" onclick="bellmanAddNeg()">± Arête négative</button>
+        <button class="btn bd" onclick="graphReset('bellman')">↺ Reset</button>
+        <button class="btn bd" onclick="graphNew('bellman')">⊞ Nouveau graphe</button>
+        <div class="srow" style="flex:1"><label>Vitesse :</label><input type="range" id="bell-spd" min="100" max="900" value="450"><span class="sv2" id="bell-spd-v">450</span></div>
+      </div>
+      <div class="graph-area"><canvas id="bellman-canvas" width="840" height="340"></canvas></div>
+      <div class="stats-row">
+        <div class="stat"><span class="sl">Passe courante</span><span class="sv" id="bell-pass">0</span></div>
+        <div class="stat"><span class="sl">Relaxations</span><span class="sv" id="bell-rel">0</span></div>
+        <div class="stat"><span class="sl">Cycle négatif</span><span class="sv" id="bell-neg">—</span></div>
+      </div>
+      <div class="algo-log" id="bell-log"><span class="log-back">— Appuyez sur ▶ Bellman-Ford —</span></div>
+      <div class="dist-table" id="bell-dist"></div>
+    </div>
+
+    <!-- KRUSKAL / PRIM -->
+    <div class="vpanel" id="vp-kruskal">
+      <p style="font-size:.88rem;margin-bottom:.65rem">Arbre couvrant minimal — comparez <strong>Kruskal</strong> (tri des arêtes) et <strong>Prim</strong> (croissance depuis un sommet).</p>
+      <div class="ctrl">
+        <button class="btn bt" onclick="kruskalStart()">▶ Kruskal</button>
+        <button class="btn bb" onclick="primStart()">▶ Prim</button>
+        <button class="btn bd" onclick="graphReset('kruskal')">↺ Reset</button>
+        <button class="btn bd" onclick="graphNew('kruskal')">⊞ Nouveau graphe</button>
+        <div class="srow" style="flex:1"><label>Vitesse :</label><input type="range" id="krus-spd" min="150" max="1000" value="500"><span class="sv2" id="krus-spd-v">500</span></div>
+      </div>
+      <div class="graph-area"><canvas id="kruskal-canvas" width="840" height="340"></canvas></div>
+      <div class="stats-row">
+        <div class="stat"><span class="sl">Arêtes ACM</span><span class="sv" id="krus-edges">0</span></div>
+        <div class="stat"><span class="sl">Poids total</span><span class="sv" id="krus-w">0</span></div>
+        <div class="stat"><span class="sl">Arêtes rejetées</span><span class="sv" id="krus-rej">0</span></div>
+      </div>
+      <div class="algo-log" id="krus-log"><span class="log-back">— Choisissez Kruskal ou Prim —</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ 03 COURS ═══════════════════════ -->
+<div class="section" id="sec-2">
+  <div class="sh" onclick="toggleS(2)"><span class="sn">03</span><span class="st">Cours — Rappels et définitions</span><span class="sa" id="a2">▼</span></div>
+  <div class="sb" id="b2">
+
+    <h2>4.5.1 — Représentations</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Représentation</th><th>Espace</th><th>Accès arête (u,v)</th><th>Liste voisins de u</th><th>Idéal pour</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Matrice d'adjacence</strong></td><td class="warn">O(V²)</td><td class="ok">O(1)</td><td class="warn">O(V)</td><td>Graphes denses</td></tr>
+        <tr><td><strong>Listes d'adjacence</strong></td><td class="ok">O(V+E)</td><td class="warn">O(deg(u))</td><td class="ok">O(deg(u))</td><td>Graphes creux</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2 style="margin-top:1.3rem">4.5.2 — Parcours BFS et DFS</h2>
+    <div class="callout c-green"><div class="ct">BFS — Parcours en largeur</div>
+      File FIFO. Visite par niveaux croissants. <strong>Distance minimale</strong> (non pondérée) = niveau du sommet. Complexité <strong>O(V+E)</strong>.<br>
+      <em>Invariant :</em> tous les sommets à distance k sont découverts avant ceux à distance k+1.
+    </div>
+    <div class="callout c-blue"><div class="ct">DFS — Parcours en profondeur</div>
+      Pile (ou récursion). Timestamps découverte/fin. <strong>Détecte les cycles</strong> (arête arrière). <strong>Tri topologique</strong> (ordre décroissant de fin sur DAG). Complexité <strong>O(V+E)</strong>.<br>
+      <em>Invariant :</em> l'intervalle [d[v], f[v]] est inclus dans [d[u], f[u]] si v est un descendant de u.
+    </div>
+
+    <h2 style="margin-top:1.3rem">4.5.3 — Plus courts chemins</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Algorithme</th><th>Poids négatifs</th><th>Source unique</th><th>Toutes paires</th><th>Complexité</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Dijkstra</strong></td><td class="bad">Non</td><td class="ok">Oui</td><td class="bad">Non (1 appel par sommet)</td><td class="ok">O((V+E) log V)</td></tr>
+        <tr><td><strong>Bellman-Ford</strong></td><td class="ok">Oui</td><td class="ok">Oui</td><td class="bad">Non</td><td class="warn">O(V·E)</td></tr>
+        <tr><td><strong>Floyd-Warshall</strong></td><td class="ok">Oui (si pas cycle négatif)</td><td class="bad">Non</td><td class="ok">Oui</td><td class="warn">O(V³)</td></tr>
+        <tr><td><strong>BFS</strong></td><td>Pas de poids</td><td class="ok">Oui</td><td class="bad">Non</td><td class="ok">O(V+E)</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Dijkstra — invariant clé</h3>
+    <div class="callout c-gold"><div class="ct">Invariant de Dijkstra</div>
+      Quand un sommet u est extrait du tas, <code>dist[u]</code> est la distance définitive minimale depuis la source.<br>
+      <strong>Précondition absolue :</strong> tous les poids doivent être <em>strictement positifs</em> (ou ≥ 0). Un poids négatif invalide l'algorithme.
+    </div>
+
+    <h3>Bellman-Ford — principe</h3>
+    <div class="callout c-red"><div class="ct">Bellman-Ford</div>
+      Effectuer <strong>V−1 passes</strong> sur toutes les arêtes. À chaque passe, relâcher chaque arête.<br>
+      Après V−1 passes, toutes les distances sont optimales (si pas de cycle négatif).<br>
+      <strong>Détection de cycle négatif :</strong> si une relaxation est encore possible à la V-ième passe → cycle absorbant.
+    </div>
+
+    <h3>Floyd-Warshall — récurrence</h3>
+    <div class="callout"><div class="ct">Récurrence DP</div>
+      <code>d[i][j][k] = min(d[i][j][k-1], d[i][k][k-1] + d[k][j][k-1])</code><br>
+      <em>d[i][j][k]</em> = distance minimale de i à j en utilisant uniquement les sommets {1,…,k} comme intermédiaires.<br>
+      Initialisation : <code>d[i][j][0] = poids(i,j)</code> si l'arête existe, +∞ sinon, 0 si i=j.
+    </div>
+
+    <h2 style="margin-top:1.3rem">4.5.4 — Arbres couvrants minimaux</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Algorithme</th><th>Stratégie</th><th>Structure</th><th>Complexité</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Kruskal</strong></td><td>Tri des arêtes par poids, ajout si pas de cycle (Union-Find)</td><td>Union-Find</td><td class="ok">O(E log E)</td></tr>
+        <tr><td><strong>Prim</strong></td><td>Croissance depuis un sommet, ajouter l'arête de poids min vers l'extérieur</td><td>Tas min</td><td class="ok">O((V+E) log V)</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout c-blue"><div class="ct">Théorème de la coupe (Cut property)</div>
+      Pour tout coupe (S, V\S) du graphe, l'arête de poids minimal traversant la coupe appartient à <em>tout</em> ACM.<br>
+      Ce théorème est la base de la preuve de correction de Kruskal et Prim.
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════ 04 CODE ═══════════════════════ -->
+<div class="section" id="sec-3">
+  <div class="sh" onclick="toggleS(3)"><span class="sn">04</span><span class="st">Exemples de code en C et OCaml</span><span class="sa" id="a3">▼</span></div>
+  <div class="sb" id="b3">
+
+    <h2>① BFS et DFS</h2>
+    <div class="ltabs">
+      <button class="ltab c-tab active" onclick="swLang(this,'g1')">C99</button>
+      <button class="ltab ml-tab" onclick="swLang(this,'g1')">OCaml</button>
+    </div>
+    <div class="lpane active" id="g1-c"><div class="cb">
+      <div class="ch"><span class="clang lc">C99</span><span class="cfn">bfs_dfs.c</span><div class="ca">
+        <button class="btn bg" onclick="runCode(this)">▶ Simuler</button>
+        <button class="btn bb" onclick="dlCode(this,'.c')">↓ .c</button>
+        <button class="btn bd" onclick="rstCode(this)">↺</button>
+      </div></div>
+      <textarea class="ce" spellcheck="false">
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+/* ── BFS et DFS sur graphe orienté (listes d'adjacence) ──
+ *
+ * Représentation : tableau de listes chaînées (voisins).
+ * V sommets numérotés 0..V-1.
+ *
+ * BFS — Précondition : source ∈ [0, V-1]
+ *       Postcondition : dist[v] = distance minimale depuis source,
+ *                       ou -1 si v non atteignable.
+ *       Complexité : O(V+E)
+ *
+ * DFS — Complexité : O(V+E)
+ *       Invariant : un sommet GRIS est en cours d'exploration
+ *                   (sur la pile de récursion).
+ *       Une arête vers un sommet GRIS est une arête arrière → cycle.
+ */
+#define V 7
+#define INF -1
+
+/* Adjacence : adj[u] = liste des voisins de u */
+int adj[V][V]; /* matrice ici pour simplicité */
+bool G[V][V] = {
+  {0,1,1,0,0,0,0},
+  {0,0,0,1,1,0,0},
+  {0,0,0,0,1,0,0},
+  {0,0,0,0,0,1,0},
+  {0,0,0,0,0,1,1},
+  {0,0,0,0,0,0,1},
+  {0,0,0,0,0,0,0}
+};
+
+/* ── BFS ── */
+int dist[V];
+int pred[V];
+
+void bfs(int src) {
+    bool visite[V] = {false};
+    int file[V]; int debut = 0, fin = 0;
+    for (int i = 0; i < V; i++) { dist[i] = INF; pred[i] = -1; }
+    dist[src] = 0;
+    visite[src] = true;
+    file[fin++] = src;
+    while (debut < fin) {
+        int u = file[debut++];
+        for (int v = 0; v < V; v++) {
+            if (G[u][v] && !visite[v]) {
+                visite[v] = true;
+                dist[v] = dist[u] + 1;
+                pred[v] = u;
+                file[fin++] = v;
+            }
+        }
+    }
+}
+
+void afficher_chemin(int src, int dst) {
+    if (dist[dst] == INF) { printf("  Pas de chemin %d→%d\n", src, dst); return; }
+    int chemin[V]; int n = 0, v = dst;
+    while (v != -1) { chemin[n++] = v; v = pred[v]; }
+    printf("  Chemin %d→%d (dist=%d) : ", src, dst, dist[dst]);
+    for (int i = n-1; i >= 0; i--) printf("%d%s", chemin[i], i>0?" → ":"");
+    printf("\n");
+}
+
+/* ── DFS ── */
+int couleur[V]; /* 0=blanc, 1=gris, 2=noir */
+int d_time[V], f_time[V];
+bool cycle_detecte = false;
+int chrono = 0;
+
+void dfs_visite(int u) {
+    couleur[u] = 1; d_time[u] = chrono++;
+    for (int v = 0; v < V; v++) {
+        if (G[u][v]) {
+            if (couleur[v] == 0) dfs_visite(v);
+            else if (couleur[v] == 1) {
+                printf("  Cycle détecté : arête arrière %d→%d\n", u, v);
+                cycle_detecte = true;
+            }
+        }
+    }
+    couleur[u] = 2; f_time[u] = chrono++;
+}
+
+void dfs() {
+    for (int u = 0; u < V; u++) couleur[u] = 0;
+    cycle_detecte = false; chrono = 0;
+    for (int u = 0; u < V; u++)
+        if (couleur[u] == 0) dfs_visite(u);
+}
+
+int main(void) {
+    printf("=== BFS depuis le sommet 0 ===\n");
+    bfs(0);
+    for (int v = 0; v < V; v++)
+        printf("  dist[%d] = %d\n", v, dist[v]);
+    afficher_chemin(0, 6);
+    afficher_chemin(0, 5);
+
+    printf("\n=== DFS ===\n");
+    dfs();
+    printf("  Timestamps (découverte/fin) :\n");
+    for (int u = 0; u < V; u++)
+        printf("  v%d : d=%d f=%d\n", u, d_time[u], f_time[u]);
+    printf("  Cycle : %s\n", cycle_detecte ? "oui" : "non");
+    return 0;
+}
+      </textarea><div class="co"></div>
+    </div></div>
+    <div class="lpane" id="g1-ml"><div class="cb">
+      <div class="ch"><span class="clang lml">OCaml</span><span class="cfn">bfs_dfs.ml</span><div class="ca">
+        <button class="btn bg" onclick="runCode(this)">▶ Simuler</button>
+        <button class="btn bb" onclick="dlCode(this,'.ml')">↓ .ml</button>
+        <button class="btn bd" onclick="rstCode(this)">↺</button>
+      </div></div>
+      <textarea class="ce" spellcheck="false">
+(* BFS et DFS en OCaml — listes d'adjacence
+ *
+ * Représentation : array de listes (listes d'adjacence).
+ * Invariant BFS : dist.(v) = distance minimale depuis source,
+ *                 ou max_int si non atteint.
+ * Invariant DFS : sommet gris = en cours d'exploration sur la pile.
+ *                 Arête vers gris = arête arrière = cycle.
+ * Complexité BFS et DFS : O(V+E)
+ *)
+let v = 7
+let g = [| (* listes d'adjacence *)
+  [1;2];     (* 0 *)
+  [3;4];     (* 1 *)
+  [4];       (* 2 *)
+  [5];       (* 3 *)
+  [5;6];     (* 4 *)
+  [6];       (* 5 *)
+  []         (* 6 *)
+|]
+
+(* ── BFS ── *)
+let bfs src =
+  let dist = Array.make v max_int in
+  let pred = Array.make v (-1) in
+  let file = Queue.create () in
+  dist.(src) <- 0;
+  Queue.push src file;
+  while not (Queue.is_empty file) do
+    let u = Queue.pop file in
+    List.iter (fun nv ->
+      if dist.(nv) = max_int then begin
+        dist.(nv) <- dist.(u) + 1;
+        pred.(nv) <- u;
+        Queue.push nv file
+      end
+    ) g.(u)
+  done;
+  dist, pred
+
+let chemin pred src dst =
+  if pred.(dst) = -1 && dst <> src then None
+  else begin
+    let path = ref [] in
+    let cur = ref dst in
+    while !cur <> -1 do path := !cur :: !path; cur := pred.(!cur) done;
+    Some !path
+  end
+
+(* ── DFS ── *)
+type couleur = Blanc | Gris | Noir
+let couleurs = Array.make v Blanc
+let d_time = Array.make v 0
+let f_time = Array.make v 0
+let chrono = ref 0
+let cycle = ref false
+
+let rec dfs_visite u =
+  couleurs.(u) <- Gris;
+  d_time.(u) <- !chrono; incr chrono;
+  List.iter (fun nv ->
+    match couleurs.(nv) with
+    | Blanc -> dfs_visite nv
+    | Gris  -> Printf.printf "  Arête arrière %d→%d → cycle !\n" u nv; cycle := true
+    | Noir  -> ()
+  ) g.(u);
+  couleurs.(u) <- Noir;
+  f_time.(u) <- !chrono; incr chrono
+
+let dfs () =
+  Array.fill couleurs 0 v Blanc;
+  cycle := false; chrono := 0;
+  for u = 0 to v-1 do
+    if couleurs.(u) = Blanc then dfs_visite u
+  done
+
+let () =
+  Printf.printf "=== BFS depuis 0 ===\n";
+  let dist, pred = bfs 0 in
+  Array.iteri (fun i d ->
+    Printf.printf "  dist[%d] = %s\n" i
+      (if d = max_int then "∞" else string_of_int d)) dist;
+  (match chemin pred 0 6 with
+   | Some p -> Printf.printf "  Chemin 0→6 : %s\n"
+       (String.concat " → " (List.map string_of_int p))
+   | None -> Printf.printf "  Pas de chemin 0→6\n");
+
+  Printf.printf "\n=== DFS ===\n";
+  dfs ();
+  for u = 0 to v-1 do
+    Printf.printf "  v%d : d=%d f=%d\n" u d_time.(u) f_time.(u)
+  done;
+  Printf.printf "  Cycle : %s\n" (if !cycle then "oui" else "non")
+      </textarea><div class="co"></div>
+    </div></div>
+
+    <h2 style="margin-top:1.4rem">② Algorithme de Dijkstra</h2>
+    <div class="ltabs">
+      <button class="ltab c-tab active" onclick="swLang(this,'g2')">C99</button>
+      <button class="ltab ml-tab" onclick="swLang(this,'g2')">OCaml</button>
+    </div>
+    <div class="lpane active" id="g2-c"><div class="cb">
+      <div class="ch"><span class="clang lc">C99</span><span class="cfn">dijkstra.c</span><div class="ca">
+        <button class="btn bg" onclick="runCode(this)">▶ Simuler</button>
+        <button class="btn bb" onclick="dlCode(this,'.c')">↓ .c</button>
+        <button class="btn bd" onclick="rstCode(this)">↺</button>
+      </div></div>
+      <textarea class="ce" spellcheck="false">
+#include <stdio.h>
+#include <limits.h>
+#include <stdbool.h>
+
+/* ── Algorithme de Dijkstra ──
+ *
+ * Graphe pondéré (poids >= 0), représenté par matrice de poids.
+ * INF = pas d'arête.
+ *
+ * Invariant : quand un sommet u est finalisé (extrait du tas),
+ *   dist[u] est la distance définitive minimale depuis src.
+ *
+ * Précondition  : poids >= 0 (pas de poids négatifs)
+ * Postcondition : dist[v] = distance minimale src→v, ou INT_MAX si inexistant
+ * Complexité    : O(V²) ici (sans tas), O((V+E)log V) avec tas min
+ */
+#define V 6
+#define INF INT_MAX
+
+int poids[V][V] = {
+  {0,  7, INF, INF,  2, INF},
+  {7,  0,  4,  INF, INF, 5},
+  {INF,4,  0,   3,  INF, INF},
+  {INF,INF,3,   0,   8,  1},
+  {2,  INF,INF, 8,   0,  6},
+  {INF,5, INF,  1,   6,  0}
+};
+
+int dist[V], pred[V];
+bool finalise[V];
+
+/* Trouver le sommet non finalisé de distance minimale — O(V) */
+int min_dist(void) {
+    int min = INF, u = -1;
+    for (int v = 0; v < V; v++)
+        if (!finalise[v] && dist[v] < min) { min = dist[v]; u = v; }
+    return u;
+}
+
+void dijkstra(int src) {
+    for (int v = 0; v < V; v++) {
+        dist[v] = INF; pred[v] = -1; finalise[v] = false;
+    }
+    dist[src] = 0;
+    printf("Initialisation : dist[%d] = 0\n", src);
+
+    for (int iter = 0; iter < V; iter++) {
+        int u = min_dist();
+        if (u == -1) break;
+        finalise[u] = true;
+        printf("Finalise u=%d (dist=%d)\n", u, dist[u]);
+
+        /* Relaxation des voisins */
+        for (int v = 0; v < V; v++) {
+            if (!finalise[v] && poids[u][v] != INF &&
+                dist[u] != INF && dist[u] + poids[u][v] < dist[v]) {
+                dist[v] = dist[u] + poids[u][v];
+                pred[v] = u;
+                printf("  Relaxation : dist[%d] = %d (via %d)\n", v, dist[v], u);
+            }
+        }
+    }
+}
+
+void afficher_chemin(int src, int dst) {
+    if (dist[dst] == INF) { printf("Pas de chemin %d→%d\n", src, dst); return; }
+    int chemin[V]; int n = 0, v = dst;
+    while (v != -1) { chemin[n++] = v; v = pred[v]; }
+    printf("Chemin %d→%d (dist=%d) : ", src, dst, dist[dst]);
+    for (int i = n-1; i >= 0; i--) printf("%d%s", chemin[i], i>0?" → ":"");
+    printf("\n");
+}
+
+int main(void) {
+    dijkstra(0);
+    printf("\nDistances depuis 0 :\n");
+    for (int v = 0; v < V; v++)
+        printf("  dist[%d] = %d\n", v, dist[v]);
+    printf("\n");
+    afficher_chemin(0, 3);
+    afficher_chemin(0, 5);
+    return 0;
+}
+      </textarea><div class="co"></div>
+    </div></div>
+    <div class="lpane" id="g2-ml"><div class="cb">
+      <div class="ch"><span class="clang lml">OCaml</span><span class="cfn">dijkstra.ml</span><div class="ca">
+        <button class="btn bg" onclick="runCode(this)">▶ Simuler</button>
+        <button class="btn bb" onclick="dlCode(this,'.ml')">↓ .ml</button>
+        <button class="btn bd" onclick="rstCode(this)">↺</button>
+      </div></div>
+      <textarea class="ce" spellcheck="false">
+(* Dijkstra en OCaml — module de priorité via module Set
+ *
+ * Invariant : quand (dist, u) est extrait du Set (priorité min),
+ *   dist.(u) est définitif si dist = dist.(u) (sinon entrée périmée).
+ * Précondition : poids >= 0
+ * Complexité : O((V+E) log V)
+ *)
+let v = 6
+let inf = max_int / 2
+
+(* Graphe pondéré : listes d'adjacence avec poids *)
+let g = [|
+  [(1,7);(4,2)];
+  [(0,7);(2,4);(5,5)];
+  [(1,4);(3,3)];
+  [(2,3);(4,8);(5,1)];
+  [(0,2);(3,8);(5,6)];
+  [(1,5);(3,1);(4,6)]
+|]
+
+module PQ = Set.Make(struct
+  type t = int * int  (* (distance, sommet) *)
+  let compare (d1,v1) (d2,v2) =
+    let c = compare d1 d2 in if c <> 0 then c else compare v1 v2
+end)
+
+(* dijkstra : int -> int array * int array
+ * Retourne (dist, pred)
+ * dist.(v) = distance minimale src→v (inf si inaccessible)
+ * pred.(v) = prédécesseur sur le chemin optimal *)
+let dijkstra src =
+  let dist = Array.make v inf in
+  let pred = Array.make v (-1) in
+  let pq = ref (PQ.singleton (0, src)) in
+  dist.(src) <- 0;
+  while not (PQ.is_empty !pq) do
+    let (d, u) = PQ.min_elt !pq in
+    pq := PQ.remove (d, u) !pq;
+    if d = dist.(u) then  (* entrée non périmée *)
+      List.iter (fun (nv, w) ->
+        let nd = dist.(u) + w in
+        if nd < dist.(nv) then begin
+          dist.(nv) <- nd;
+          pred.(nv) <- u;
+          pq := PQ.add (nd, nv) !pq
+        end
+      ) g.(u)
+  done;
+  dist, pred
+
+let chemin pred src dst =
+  if pred.(dst) = -1 && dst <> src then []
+  else begin
+    let p = ref [] and cur = ref dst in
+    while !cur <> -1 do p := !cur :: !p; cur := pred.(!cur) done;
+    !p
+  end
+
+let () =
+  let dist, pred = dijkstra 0 in
+  Printf.printf "Distances depuis 0 :\n";
+  Array.iteri (fun i d ->
+    Printf.printf "  dist[%d] = %s\n" i
+      (if d = inf then "∞" else string_of_int d)) dist;
+  Printf.printf "\nChemin 0→3 : %s (dist=%d)\n"
+    (String.concat " → " (List.map string_of_int (chemin pred 0 3)))
+    dist.(3);
+  Printf.printf "Chemin 0→5 : %s (dist=%d)\n"
+    (String.concat " → " (List.map string_of_int (chemin pred 0 5)))
+    dist.(5)
+      </textarea><div class="co"></div>
+    </div></div>
+
+    <h2 style="margin-top:1.4rem">③ Bellman-Ford et Floyd-Warshall</h2>
+    <div class="ltabs">
+      <button class="ltab c-tab active" onclick="swLang(this,'g3')">C99</button>
+      <button class="ltab ml-tab" onclick="swLang(this,'g3')">OCaml</button>
+    </div>
+    <div class="lpane active" id="g3-c"><div class="cb">
+      <div class="ch"><span class="clang lc">C99</span><span class="cfn">bellman_floyd.c</span><div class="ca">
+        <button class="btn bg" onclick="runCode(this)">▶ Simuler</button>
+        <button class="btn bb" onclick="dlCode(this,'.c')">↓ .c</button>
+        <button class="btn bd" onclick="rstCode(this)">↺</button>
+      </div></div>
+      <textarea class="ce" spellcheck="false">
+#include <stdio.h>
+#include <limits.h>
+#include <stdbool.h>
+#include <string.h>
+
+#define V 5
+#define E 8
+#define INF (INT_MAX / 2)
+
+typedef struct { int u, v, w; } Arete;
+
+/* Graphe avec poids négatifs (pas de cycle négatif ici) */
+Arete aretes[E] = {
+  {0,1, 6},{0,2, 7},{1,2, 8},{1,3,-4},
+  {1,4, 5},{2,4,-3},{3,0, 2},{4,3, 7}
+};
+
+/* ── Bellman-Ford ──
+ * V-1 passes de relaxation sur toutes les arêtes.
+ * Précondition : src ∈ [0, V-1]
+ * Postcondition : dist[v] = dist minimale src→v,
+ *   ou signal cycle négatif si V-ième passe encore relaxe.
+ * Complexité : O(V·E)
+ */
+bool bellman_ford(int src, int dist[V]) {
+    for (int v = 0; v < V; v++) dist[v] = INF;
+    dist[src] = 0;
+    for (int i = 0; i < V-1; i++) {       /* V-1 passes */
+        for (int e = 0; e < E; e++) {
+            int u = aretes[e].u, v = aretes[e].v, w = aretes[e].w;
+            if (dist[u] != INF && dist[u] + w < dist[v])
+                dist[v] = dist[u] + w;
+        }
+    }
+    /* Détection cycle négatif : V-ième passe */
+    for (int e = 0; e < E; e++) {
+        int u = aretes[e].u, v = aretes[e].v, w = aretes[e].w;
+        if (dist[u] != INF && dist[u] + w < dist[v]) return false; /* cycle ! */
+    }
+    return true; /* pas de cycle négatif */
+}
+
+/* ── Floyd-Warshall ──
+ * Toutes paires de plus courts chemins.
+ * Précondition : pas de cycle de poids négatif
+ * Postcondition : d[i][j] = dist minimale i→j
+ * Complexité : O(V³)
+ */
+int fw_d[V][V];
+void floyd_warshall(void) {
+    /* Initialisation */
+    for (int i = 0; i < V; i++) for (int j = 0; j < V; j++)
+        fw_d[i][j] = (i == j) ? 0 : INF;
+    for (int e = 0; e < E; e++)
+        fw_d[aretes[e].u][aretes[e].v] = aretes[e].w;
+    /* Récurrence DP */
+    for (int k = 0; k < V; k++)
+        for (int i = 0; i < V; i++)
+            for (int j = 0; j < V; j++)
+                if (fw_d[i][k] != INF && fw_d[k][j] != INF &&
+                    fw_d[i][k] + fw_d[k][j] < fw_d[i][j])
+                    fw_d[i][j] = fw_d[i][k] + fw_d[k][j];
+}
+
+int main(void) {
+    int dist[V];
+    printf("=== Bellman-Ford depuis 0 ===\n");
+    bool ok = bellman_ford(0, dist);
+    printf("Pas de cycle négatif : %s\n", ok ? "oui" : "NON — CYCLE !");
+    for (int v = 0; v < V; v++)
+        printf("  dist[%d] = %d\n", v, dist[v]);
+
+    printf("\n=== Floyd-Warshall (toutes paires) ===\n");
+    floyd_warshall();
+    printf("Matrice des distances :\n");
+    printf("     ");
+    for (int j = 0; j < V; j++) printf(" %4d", j);
+    printf("\n");
+    for (int i = 0; i < V; i++) {
+        printf("  %d |", i);
+        for (int j = 0; j < V; j++) {
+            if (fw_d[i][j] == INF) printf("   ∞ ");
+            else printf(" %4d", fw_d[i][j]);
+        }
+        printf("\n");
+    }
+    return 0;
+}
+      </textarea><div class="co"></div>
+    </div></div>
+    <div class="lpane" id="g3-ml"><div class="cb">
+      <div class="ch"><span class="clang lml">OCaml</span><span class="cfn">bellman_floyd.ml</span><div class="ca">
+        <button class="btn bg" onclick="runCode(this)">▶ Simuler</button>
+        <button class="btn bb" onclick="dlCode(this,'.ml')">↓ .ml</button>
+        <button class="btn bd" onclick="rstCode(this)">↺</button>
+      </div></div>
+      <textarea class="ce" spellcheck="false">
+(* Bellman-Ford et Floyd-Warshall en OCaml
+ *
+ * Bellman-Ford :
+ *   Invariant : après k passes, dist.(v) <= longueur du plus court
+ *     chemin utilisant au plus k arêtes.
+ *   Complexité : O(V·E)
+ *
+ * Floyd-Warshall :
+ *   Récurrence : d.(i).(j) après la passe k = distance min en passant
+ *     par les sommets {0,…,k}.
+ *   Complexité : O(V³)
+ *)
+let v = 5
+let inf = max_int / 2
+
+type arete = { u:int; nv:int; w:int }
+let aretes = [
+  {u=0;nv=1;w=6};{u=0;nv=2;w=7};{u=1;nv=2;w=8};{u=1;nv=3;w= -4};
+  {u=1;nv=4;w=5};{u=2;nv=4;w= -3};{u=3;nv=0;w=2};{u=4;nv=3;w=7}
+]
+
+(* bellman_ford : int -> int array * bool
+ * Retourne (dist, sans_cycle_negatif)
+ * Précondition : src ∈ [0, v-1] *)
+let bellman_ford src =
+  let dist = Array.make v inf in
+  dist.(src) <- 0;
+  for _ = 1 to v - 1 do  (* V-1 passes *)
+    List.iter (fun a ->
+      if dist.(a.u) <> inf && dist.(a.u) + a.w < dist.(a.nv) then
+        dist.(a.nv) <- dist.(a.u) + a.w
+    ) aretes
+  done;
+  (* Détection cycle négatif *)
+  let ok = not (List.exists (fun a ->
+    dist.(a.u) <> inf && dist.(a.u) + a.w < dist.(a.nv)) aretes)
+  in dist, ok
+
+(* floyd_warshall : unit -> int array array
+ * Postcondition : d.(i).(j) = distance minimale i→j
+ * Complexité : O(V³) *)
+let floyd_warshall () =
+  let d = Array.init v (fun i -> Array.init v (fun j -> if i=j then 0 else inf)) in
+  List.iter (fun a -> d.(a.u).(a.nv) <- a.w) aretes;
+  for k = 0 to v-1 do
+    for i = 0 to v-1 do
+      for j = 0 to v-1 do
+        if d.(i).(k) <> inf && d.(k).(j) <> inf &&
+           d.(i).(k) + d.(k).(j) < d.(i).(j) then
+          d.(i).(j) <- d.(i).(k) + d.(k).(j)
+      done
+    done
+  done;
+  d
+
+let () =
+  Printf.printf "=== Bellman-Ford depuis 0 ===\n";
+  let dist, ok = bellman_ford 0 in
+  Printf.printf "Pas de cycle négatif : %s\n" (if ok then "oui" else "NON !");
+  Array.iteri (fun i d ->
+    Printf.printf "  dist[%d] = %s\n" i
+      (if d = inf then "∞" else string_of_int d)) dist;
+  Printf.printf "\n=== Floyd-Warshall ===\n";
+  let d = floyd_warshall () in
+  Printf.printf "     "; for j = 0 to v-1 do Printf.printf " %4d" j done;
+  Printf.printf "\n";
+  for i = 0 to v-1 do
+    Printf.printf "  %d |" i;
+    for j = 0 to v-1 do
+      if d.(i).(j) = inf then Printf.printf "    ∞"
+      else Printf.printf " %4d" d.(i).(j)
+    done; Printf.printf "\n"
+  done
+      </textarea><div class="co"></div>
+    </div></div>
+
+    <h2 style="margin-top:1.4rem">④ Kruskal — Arbre couvrant minimal</h2>
+    <div class="ltabs">
+      <button class="ltab c-tab active" onclick="swLang(this,'g4')">C99</button>
+      <button class="ltab ml-tab" onclick="swLang(this,'g4')">OCaml</button>
+    </div>
+    <div class="lpane active" id="g4-c"><div class="cb">
+      <div class="ch"><span class="clang lc">C99</span><span class="cfn">kruskal.c</span><div class="ca">
+        <button class="btn bg" onclick="runCode(this)">▶ Simuler</button>
+        <button class="btn bb" onclick="dlCode(this,'.c')">↓ .c</button>
+        <button class="btn bd" onclick="rstCode(this)">↺</button>
+      </div></div>
+      <textarea class="ce" spellcheck="false">
+#include <stdio.h>
+#include <stdlib.h>
+
+/* ── Kruskal — Arbre couvrant minimal (ACM) ──
+ *
+ * Algorithme glouton : trier les arêtes par poids croissant,
+ * ajouter chaque arête si elle ne crée pas de cycle (Union-Find).
+ *
+ * Union-Find avec compression de chemin et rang :
+ *   trouver(x) : O(α(V)) amortie (quasi O(1))
+ *   unir(x, y)  : O(α(V)) amortie
+ *
+ * Invariant : à chaque étape, les arêtes sélectionnées forment
+ *   une forêt couvrante minimale du sous-graphe traité.
+ *
+ * Précondition  : graphe connexe non orienté
+ * Postcondition : acm contient V-1 arêtes formant l'ACM
+ * Complexité    : O(E log E) (dominé par le tri)
+ */
+#define V 6
+#define E 10
+
+typedef struct { int u, v, w; } Arete;
+int parent[V], rang[V];
+
+/* Initialisation Union-Find */
+void init_uf(void) {
+    for (int i = 0; i < V; i++) { parent[i] = i; rang[i] = 0; }
+}
+
+/* Trouver avec compression de chemin */
+int trouver(int x) {
+    if (parent[x] != x) parent[x] = trouver(parent[x]);
+    return parent[x];
+}
+
+/* Union par rang — retourne false si même composante (cycle) */
+bool unir(int x, int y) {
+    int rx = trouver(x), ry = trouver(y);
+    if (rx == ry) return false; /* cycle ! */
+    if (rang[rx] < rang[ry]) { int tmp = rx; rx = ry; ry = tmp; }
+    parent[ry] = rx;
+    if (rang[rx] == rang[ry]) rang[rx]++;
+    return true;
+}
+
+int cmp_arete(const void *a, const void *b) {
+    return ((Arete*)a)->w - ((Arete*)b)->w;
+}
+
+Arete aretes[E] = {
+  {0,1,4},{0,2,3},{1,2,1},{1,3,2},{2,3,4},{2,4,2},{3,4,3},{3,5,2},{4,5,5},{0,5,8}
+};
+
+int main(void) {
+    qsort(aretes, E, sizeof(Arete), cmp_arete);
+    init_uf();
+
+    printf("=== Kruskal — ACM ===\n");
+    printf("Arêtes triées par poids :\n");
+    for (int i = 0; i < E; i++)
+        printf("  (%d,%d) w=%d\n", aretes[i].u, aretes[i].v, aretes[i].w);
+
+    printf("\nConstruction de l'ACM :\n");
+    int poids_total = 0, nb_acm = 0;
+    for (int i = 0; i < E && nb_acm < V-1; i++) {
+        if (unir(aretes[i].u, aretes[i].v)) {
+            printf("  ✓ Ajout (%d,%d) w=%d\n", aretes[i].u, aretes[i].v, aretes[i].w);
+            poids_total += aretes[i].w;
+            nb_acm++;
+        } else {
+            printf("  ✗ Rejet (%d,%d) w=%d (cycle)\n",
+                   aretes[i].u, aretes[i].v, aretes[i].w);
+        }
+    }
+    printf("\nPoids total de l'ACM : %d\n", poids_total);
+    printf("Nombre d'arêtes : %d (= V-1 = %d)\n", nb_acm, V-1);
+    return 0;
+}
+      </textarea><div class="co"></div>
+    </div></div>
+    <div class="lpane" id="g4-ml"><div class="cb">
+      <div class="ch"><span class="clang lml">OCaml</span><span class="cfn">kruskal.ml</span><div class="ca">
+        <button class="btn bg" onclick="runCode(this)">▶ Simuler</button>
+        <button class="btn bb" onclick="dlCode(this,'.ml')">↓ .ml</button>
+        <button class="btn bd" onclick="rstCode(this)">↺</button>
+      </div></div>
+      <textarea class="ce" spellcheck="false">
+(* Kruskal — ACM en OCaml
+ *
+ * Union-Find avec compression de chemin et union par rang.
+ * Invariant Kruskal : les arêtes choisies forment une forêt
+ *   couvrante minimale du sous-graphe traité.
+ * Complexité : O(E log E) dominé par le tri.
+ *)
+let v = 6
+
+type arete = { u:int; nv:int; w:int }
+let aretes = [
+  {u=0;nv=1;w=4};{u=0;nv=2;w=3};{u=1;nv=2;w=1};{u=1;nv=3;w=2};
+  {u=2;nv=3;w=4};{u=2;nv=4;w=2};{u=3;nv=4;w=3};{u=3;nv=5;w=2};
+  {u=4;nv=5;w=5};{u=0;nv=5;w=8}
+]
+
+(* Union-Find *)
+let parent = Array.init v (fun i -> i)
+let rang   = Array.make v 0
+
+let rec trouver x =
+  if parent.(x) = x then x
+  else begin
+    parent.(x) <- trouver parent.(x);  (* compression de chemin *)
+    parent.(x)
+  end
+
+(* unir : retourne true si union effectuée (pas de cycle) *)
+let unir x y =
+  let rx = trouver x and ry = trouver y in
+  if rx = ry then false
+  else begin
+    (if rang.(rx) < rang.(ry) then parent.(rx) <- ry
+     else if rang.(rx) > rang.(ry) then parent.(ry) <- rx
+     else begin parent.(ry) <- rx; rang.(rx) <- rang.(rx)+1 end);
+    true
+  end
+
+let () =
+  let sorted = List.sort (fun a b -> compare a.w b.w) aretes in
+  Printf.printf "=== Kruskal — ACM ===\n";
+  Printf.printf "Arêtes triées par poids :\n";
+  List.iter (fun a -> Printf.printf "  (%d,%d) w=%d\n" a.u a.nv a.w) sorted;
+  Printf.printf "\nConstruction de l'ACM :\n";
+  let total = ref 0 and nb = ref 0 in
+  List.iter (fun a ->
+    if !nb < v-1 then begin
+      if unir a.u a.nv then begin
+        Printf.printf "  ✓ Ajout (%d,%d) w=%d\n" a.u a.nv a.w;
+        total := !total + a.w; incr nb
+      end else
+        Printf.printf "  ✗ Rejet (%d,%d) w=%d (cycle)\n" a.u a.nv a.w
+    end
+  ) sorted;
+  Printf.printf "\nPoids total ACM : %d\n" !total;
+  Printf.printf "Arêtes : %d (= V-1 = %d)\n" !nb (v-1)
+      </textarea><div class="co"></div>
+    </div></div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════ 05 QCM ═══════════════════════ -->
+<div class="section" id="sec-4">
+  <div class="sh" onclick="toggleS(4)"><span class="sn">05</span><span class="st">Auto-évaluation — Questions de cours</span><span class="sa" id="a4">▼</span></div>
+  <div class="sb" id="b4"><div id="qcm"></div></div>
+</div>
+
+<!-- ═══════════════════════ 06 CONTACT ═══════════════════════ -->
+<div class="section" id="sec-5">
+  <div class="sh" onclick="toggleS(5)"><span class="sn">06</span><span class="st">Contact &amp; Prise de rendez-vous</span><span class="sa" id="a5">▼</span></div>
+  <div class="sb" id="b5">
+    <div class="cgrid">
+      <div class="cc"><span class="ci">📋</span><div class="ct2">Formulaire de retour</div><div class="cs">Avis, erreur ou question.</div><img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&color=000000&bgcolor=ffffff&data=https%3A%2F%2Fdocs.google.com%2Fforms%2Fd%2Fe%2F1FAIpQLSfiOvJG1wicFQY8EQufqy5YxGgTPSFPxdyb-OAtk95SUGxWFA%2Fviewform" alt="QR"><a class="cl" href="https://docs.google.com/forms/d/e/1FAIpQLSfiOvJG1wicFQY8EQufqy5YxGgTPSFPxdyb-OAtk95SUGxWFA/viewform" target="_blank">Google Forms ↗</a></div>
+      <div class="cc"><span class="ci">🎓</span><div class="ct2">Élèves — 30 min</div><div class="cs">Créneau individuel.</div><img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&color=000000&bgcolor=ffffff&data=https%3A%2F%2Fcalendly.com%2Fdidaskalosmanthanon%2F30min" alt="QR"><a class="cl" href="https://calendly.com/didaskalosmanthanon/30min" target="_blank">Calendly ↗</a></div>
+      <div class="cc"><span class="ci">🏫</span><div class="ct2">Professeurs — 45 min</div><div class="cs">Formation, collaboration.</div><img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&color=000000&bgcolor=ffffff&data=https%3A%2F%2Fcalendly.com%2Fdidaskalosmanthanon%2Fappel-pro-formation-ou-collaboration-45-min" alt="QR"><a class="cl" href="https://calendly.com/didaskalosmanthanon/appel-pro-formation-ou-collaboration-45-min" target="_blank">Calendly ↗</a></div>
+      <div class="cc"><span class="ci">👨‍👩‍👧</span><div class="ct2">Parents — 15 min</div><div class="cs">Présentation & suivi.</div><img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&color=000000&bgcolor=ffffff&data=https%3A%2F%2Fcalendly.com%2Fdidaskalosmanthanon%2Fpoint-parents-presentation-de-l-outil-15-min" alt="QR"><a class="cl" href="https://calendly.com/didaskalosmanthanon/point-parents-presentation-de-l-outil-15-min" target="_blank">Calendly ↗</a></div>
+    </div>
+  </div>
+</div>
+
+</main>
+<script>
+/* ═══════ SECTIONS ═══════ */
+const seen=new Set();
+function toggleS(i){
+  const b=document.getElementById('b'+i),ar=document.getElementById('a'+i);
+  const s=document.getElementById('sec-'+i),h=s.querySelector('.sh');
+  if(!b.classList.contains('open')){
+    b.classList.add('open');ar.classList.add('open');h.classList.add('open');
+    s.classList.add('seen');seen.add(i);
+    document.getElementById('seen-count').textContent=seen.size;
+    if(i===1)initViz(); if(i===4)initQCM();
+  }else{b.classList.remove('open');ar.classList.remove('open');h.classList.remove('open');}
+}
+function openS(i){if(!document.getElementById('b'+i).classList.contains('open'))toggleS(i);document.getElementById('sec-'+i).scrollIntoView({behavior:'smooth',block:'start'});}
+window.addEventListener('scroll',()=>{const d=document.documentElement;document.getElementById('prog').style.width=(d.scrollTop/(d.scrollHeight-d.clientHeight)*100)+'%';});
+
+/* ═══════ SPEED SLIDERS ═══════ */
+['bfs','dfs','dijk','bell','krus'].forEach(id=>{
+  const el=document.getElementById(id+'-spd');
+  if(el) el.addEventListener('input',()=>document.getElementById(id+'-spd-v').textContent=el.value);
+});
+
+/* ═══════ GRAPH PRIMITIVES ═══════ */
+const COLORS={
+  node:'#1a2d3e',nodeStroke:'#1dd8b0',
+  visited:'rgba(168,224,99,.18)',visitedStroke:'#a8e063',
+  current:'rgba(245,166,35,.22)',currentStroke:'#f5a623',
+  path:'rgba(245,166,35,.35)',pathStroke:'#f5a623',
+  mst:'rgba(123,158,240,.22)',mstStroke:'#7b9ef0',
+  edge:'#1a2d3e',edgeActive:'#1dd8b0',edgeBack:'#e05c6a',edgeMST:'#7b9ef0',
+  text:'#b8cfe0',weight:'#f5a623',source:'rgba(29,216,176,.22)',sourceStroke:'#1dd8b0'
+};
+
+function drawGraph(ctx,nodes,edges,state){
+  const W=ctx.canvas.width,H=ctx.canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#080e14';ctx.fillRect(0,0,W,H);
+
+  // draw edges
+  edges.forEach(e=>{
+    const u=nodes[e.u],v=nodes[e.v];
+    const st=state.edgeState?state.edgeState[e.id]:'';
+    ctx.beginPath();
+    ctx.moveTo(u.x,u.y);ctx.lineTo(v.x,v.y);
+    ctx.strokeStyle=st==='active'?COLORS.edgeActive:st==='back'?COLORS.edgeBack:st==='mst'?COLORS.edgeMST:'#1a2d3e';
+    ctx.lineWidth=st?2.2:1.2;ctx.stroke();
+    // arrow for directed
+    if(state.directed){
+      const dx=v.x-u.x,dy=v.y-u.y,len=Math.sqrt(dx*dx+dy*dy);
+      const ux=dx/len,uy=dy/len;
+      const ax=v.x-ux*18,ay=v.y-uy*18;
+      ctx.beginPath();
+      ctx.moveTo(ax,ay);
+      ctx.lineTo(ax-uy*6-ux*8,ay+ux*6-uy*8);
+      ctx.lineTo(ax+uy*6-ux*8,ay-ux*6-uy*8);
+      ctx.closePath();ctx.fillStyle=ctx.strokeStyle;ctx.fill();
+    }
+    // weight
+    if(e.w!=null){
+      const mx=(u.x+v.x)/2,my=(u.y+v.y)/2;
+      ctx.fillStyle=st==='active'||st==='mst'?COLORS.weight:'#3d5c72';
+      ctx.font='11px DM Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(e.w,mx,my-8);
+    }
+  });
+
+  // draw nodes
+  nodes.forEach((n,i)=>{
+    const ns=state.nodeState?state.nodeState[i]:'';
+    let fill=COLORS.node,stroke=COLORS.nodeStroke;
+    if(ns==='source'){fill='rgba(29,216,176,.18)';stroke='#1dd8b0';}
+    else if(ns==='visited'){fill='rgba(168,224,99,.15)';stroke='#a8e063';}
+    else if(ns==='current'){fill='rgba(245,166,35,.2)';stroke='#f5a623';}
+    else if(ns==='path'){fill='rgba(245,166,35,.3)';stroke='#f5a623';}
+    else if(ns==='mst'){fill='rgba(123,158,240,.18)';stroke='#7b9ef0';}
+    ctx.beginPath();ctx.arc(n.x,n.y,20,0,2*Math.PI);
+    ctx.fillStyle=fill;ctx.fill();
+    ctx.strokeStyle=stroke;ctx.lineWidth=ns?2.2:1.5;ctx.stroke();
+    // label
+    ctx.fillStyle=COLORS.text;ctx.font='bold 12px DM Mono,monospace';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(n.label||i,n.x,n.y);
+    // dist label
+    if(state.dist&&state.dist[i]!=null&&state.dist[i]!==Infinity){
+      ctx.fillStyle='#1dd8b0';ctx.font='10px DM Mono,monospace';
+      ctx.fillText(state.dist[i]===999?'∞':state.dist[i],n.x,n.y+30);
+    }
+  });
+}
+
+/* ═══════ GRAPH DEFINITIONS ═══════ */
+function makeGraph(type){
+  // Returns {nodes, edges, directed}
+  const W=840,H=340;
+  if(type==='bfs'||type==='dfs'){
+    const nodes=[
+      {x:80,y:170,label:'A'},{x:220,y:80,label:'B'},{x:220,y:260,label:'C'},
+      {x:380,y:80,label:'D'},{x:380,y:260,label:'E'},{x:540,y:170,label:'F'},
+      {x:680,y:80,label:'G'},{x:680,y:260,label:'H'}
+    ];
+    const edges=[
+      {id:0,u:0,v:1},{id:1,u:0,v:2},{id:2,u:1,v:3},{id:3,u:1,v:4},
+      {id:4,u:2,v:4},{id:5,u:3,v:5},{id:6,u:4,v:5},{id:7,u:5,v:6},
+      {id:8,u:5,v:7},{id:9,u:6,v:7}
+    ];
+    return{nodes,edges,directed:type==='dfs'};
+  }
+  if(type==='dijkstra'){
+    const nodes=[
+      {x:100,y:170,label:'A'},{x:260,y:80,label:'B'},{x:420,y:60,label:'C'},
+      {x:580,y:80,label:'D'},{x:260,y:260,label:'E'},{x:420,y:260,label:'F'},
+      {x:580,y:260,label:'G'}
+    ];
+    const edges=[
+      {id:0,u:0,v:1,w:4},{id:1,u:0,v:4,w:2},{id:2,u:1,v:2,w:3},{id:3,u:1,v:4,w:1},
+      {id:4,u:2,v:3,w:2},{id:5,u:2,v:5,w:5},{id:6,u:3,v:6,w:1},{id:7,u:4,v:5,w:8},
+      {id:8,u:5,v:6,w:3},{id:9,u:1,v:5,w:4}
+    ];
+    return{nodes,edges,directed:false};
+  }
+  if(type==='bellman'){
+    const nodes=[
+      {x:100,y:170,label:'A'},{x:270,y:80,label:'B'},{x:270,y:260,label:'C'},
+      {x:470,y:80,label:'D'},{x:470,y:260,label:'E'},{x:650,y:170,label:'F'}
+    ];
+    const edges=[
+      {id:0,u:0,v:1,w:6},{id:1,u:0,v:2,w:7},{id:2,u:1,v:3,w:5},
+      {id:3,u:1,v:4,w:8},{id:4,u:1,v:2,w:8},{id:5,u:2,v:4,w:-3},
+      {id:6,u:3,v:5,w:-2},{id:7,u:4,v:5,w:9}
+    ];
+    return{nodes,edges,directed:true};
+  }
+  if(type==='kruskal'){
+    const nodes=[
+      {x:120,y:170,label:'A'},{x:280,y:80,label:'B'},{x:440,y:80,label:'C'},
+      {x:600,y:80,label:'D'},{x:280,y:270,label:'E'},{x:440,y:270,label:'F'},
+      {x:600,y:270,label:'G'}
+    ];
+    const edges=[
+      {id:0,u:0,v:1,w:7},{id:1,u:0,v:4,w:5},{id:2,u:1,v:2,w:8},{id:3,u:1,v:4,w:9},
+      {id:4,u:1,v:5,w:7},{id:5,u:2,v:3,w:5},{id:6,u:2,v:5,w:5},{id:7,u:3,v:6,w:9},
+      {id:8,u:4,v:5,w:15},{id:9,u:5,v:6,w:8},{id:10,u:3,v:5,w:6}
+    ];
+    return{nodes,edges,directed:false};
+  }
+  return null;
+}
+
+/* State objects for each visualizer */
+const gState={};
+function getCtx(id){return document.getElementById(id+'-canvas').getContext('2d');}
+function getSpeed(id){const el=document.getElementById(id+'-spd');return el?parseInt(el.value):400;}
+
+function initGraphViz(type){
+  const G=makeGraph(type);
+  gState[type]={G,nodeState:Array(G.nodes.length).fill(''),edgeState:{},dist:null,running:false,timer:null,source:0,steps:[],stepIdx:0};
+  const ctx=getCtx(type);
+  ctx.canvas.width=ctx.canvas.clientWidth||840;
+  drawGraph(ctx,G.nodes,G.edges,{nodeState:gState[type].nodeState,edgeState:gState[type].edgeState,directed:G.directed});
+}
+
+function graphReset(type){
+  if(gState[type]&&gState[type].timer){clearInterval(gState[type].timer);clearTimeout(gState[type].timer);}
+  initGraphViz(type);
+  // reset UI
+  ['vis','lvl','q','rel','fin','heap','pass','neg','comp','cycle','edges','w','rej'].forEach(k=>{
+    const prefix=type==='dijkstra'?'dijk':type==='bellman'?'bell':type==='kruskal'?'krus':type;
+    const el=document.getElementById(prefix+'-'+k);
+    if(el) el.textContent=k==='neg'||k==='cycle'?'—':'0';
+  });
+  const logMap={bfs:'bfs-log',dfs:'dfs-log',dijkstra:'dijk-log',bellman:'bell-log',kruskal:'krus-log'};
+  const lg=document.getElementById(logMap[type]);
+  if(lg) lg.innerHTML='<span class="log-back">— Reset —</span>';
+  const distEl=document.getElementById({dijkstra:'dijk-dist',bfs:'bfs-dist',bellman:'bell-dist'}[type]);
+  if(distEl) distEl.innerHTML='';
+}
+
+function graphNew(type){graphReset(type);}
+
+function addLog(logId,msg,cls='log-step'){
+  const el=document.getElementById(logId);
+  if(!el)return;
+  const span=document.createElement('span');
+  span.className=cls;span.textContent=msg+'\n';
+  el.appendChild(span);
+  el.scrollTop=el.scrollHeight;
+}
+function clearLog(logId){const el=document.getElementById(logId);if(el)el.innerHTML='';}
+
+/* ═══════ BFS ═══════ */
+let bfsSource=0;
+function bfsStart(){
+  const s=gState['bfs'];if(!s)return;
+  clearLog('bfs-log');
+  const {G}=s;
+  const nN=G.nodes.length;
+  const dist=Array(nN).fill(Infinity);
+  const pred=Array(nN).fill(-1);
+  dist[bfsSource]=0;
+  const queue=[bfsSource];
+  const steps=[];
+  steps.push({type:'init',src:bfsSource});
+  const visited=new Set([bfsSource]);
+  while(queue.length){
+    const u=queue.shift();
+    steps.push({type:'visit',u,dist:[...dist]});
+    G.edges.forEach(e=>{
+      let v=-1;
+      if(e.u===u&&!visited.has(e.v)) v=e.v;
+      else if(!G.directed&&e.v===u&&!visited.has(e.u)) v=e.u;
+      if(v>=0){
+        visited.add(v);dist[v]=dist[u]+1;pred[v]=u;
+        steps.push({type:'discover',u,v,dist:[...dist],eid:e.id});
+        queue.push(v);
+      }
+    });
+  }
+  steps.push({type:'done',dist:[...dist],pred:[...pred]});
+  s.steps=steps;s.stepIdx=0;
+  runSteps('bfs',steps,s,G);
+}
+
+function runSteps(type,steps,s,G){
+  if(s.timer){clearInterval(s.timer);}
+  const logMap={bfs:'bfs-log',dfs:'dfs-log',dijkstra:'dijk-log',bellman:'bell-log',kruskal:'krus-log'};
+  const ctx=getCtx(type);
+  const ns=Array(G.nodes.length).fill('');
+  const es={};
+  let vis=0,lvl=0;
+
+  s.timer=setInterval(()=>{
+    if(s.stepIdx>=steps.length){clearInterval(s.timer);return;}
+    const step=steps[s.stepIdx++];
+    if(step.type==='init'){
+      ns[step.src]='source';
+      addLog(logMap[type],`Source: ${G.nodes[step.src].label}`,'log-step');
+    } else if(step.type==='visit'){
+      if(ns[step.u]!=='source') ns[step.u]='visited';
+      vis++;lvl=step.dist[step.u];
+      document.getElementById('bfs-vis').textContent=vis;
+      document.getElementById('bfs-lvl').textContent=lvl;
+      addLog(logMap[type],`Visite: ${G.nodes[step.u].label} (dist=${step.dist[step.u]})`,'log-visit');
+    } else if(step.type==='discover'){
+      es[step.eid]='active';ns[step.v]='current';
+      addLog(logMap[type],`Découverte: ${G.nodes[step.v].label} depuis ${G.nodes[step.u].label}`,'log-relax');
+    } else if(step.type==='done'){
+      addLog(logMap[type],'✓ BFS terminé','log-done');
+      // distance table
+      const dt=document.getElementById('bfs-dist');
+      if(dt){dt.innerHTML='';step.dist.forEach((d,i)=>{const dc=document.createElement('div');dc.className='dist-cell'+(i===bfsSource?' source':d<Infinity?' reached':'');dc.textContent=`${G.nodes[i].label}:${d===Infinity?'∞':d}`;dt.appendChild(dc);});}
+    }
+    drawGraph(ctx,G.nodes,G.edges,{nodeState:[...ns],edgeState:{...es},directed:G.directed,dist:step.dist});
+  },getSpeed(type==='bfs'?'bfs':'dfs'));
+}
+
+/* canvas click for source selection */
+['bfs','dijkstra'].forEach(type=>{
+  const canvas=document.getElementById(type+'-canvas');
+  if(!canvas)return;
+  canvas.addEventListener('click',e=>{
+    const rect=canvas.getBoundingClientRect();
+    const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+    const sx=mx*(canvas.width/rect.width),sy=my*(canvas.height/rect.height);
+    const s=gState[type];if(!s)return;
+    s.G.nodes.forEach((n,i)=>{
+      if(Math.hypot(n.x-sx,n.y-sy)<22){
+        if(type==='bfs'){bfsSource=i;bfsStart();}
+        else{dijkSource=i;dijkStart();}
+      }
+    });
+  });
+});
+
+/* ═══════ DFS ═══════ */
+function dfsStart(){
+  const s=gState['dfs'];if(!s)return;
+  clearLog('dfs-log');
+  const {G}=s;const nN=G.nodes.length;
+  const color=Array(nN).fill(0);// 0 white,1 grey,2 black
+  const steps=[];let chrono=0,cycleFound=false,comp=0;
+  function dfsVisit(u){
+    color[u]=1;
+    steps.push({type:'enter',u,chrono:chrono++,color:[...color]});
+    G.edges.forEach(e=>{
+      let v=-1;
+      if(e.u===u) v=e.v;
+      else if(!G.directed&&e.v===u) v=e.u;
+      if(v>=0){
+        if(color[v]===0){steps.push({type:'tree',u,v,eid:e.id,color:[...color]});dfsVisit(v);}
+        else if(color[v]===1){steps.push({type:'back',u,v,eid:e.id,color:[...color]});cycleFound=true;}
+      }
+    });
+    color[u]=2;steps.push({type:'leave',u,chrono:chrono++,color:[...color]});
+  }
+  for(let u=0;u<nN;u++){if(color[u]===0){comp++;steps.push({type:'comp',comp});dfsVisit(u);}}
+  steps.push({type:'done',cycleFound,comp});
+  s.steps=steps;s.stepIdx=0;
+  const ctx=getCtx('dfs');
+  const ns=Array(nN).fill('');const es={};
+  let vis=0,compC=0;
+  if(s.timer)clearInterval(s.timer);
+  s.timer=setInterval(()=>{
+    if(s.stepIdx>=steps.length){clearInterval(s.timer);return;}
+    const step=steps[s.stepIdx++];
+    if(step.type==='enter'){ns[step.u]='current';vis++;document.getElementById('dfs-vis').textContent=vis;addLog('dfs-log',`Entrée: ${G.nodes[step.u].label} (d=${step.chrono})`,'log-visit');}
+    else if(step.type==='leave'){ns[step.u]='visited';addLog('dfs-log',`Sortie: ${G.nodes[step.u].label} (f=${step.chrono})`,'log-back');}
+    else if(step.type==='tree'){es[step.eid]='active';addLog('dfs-log',`Arête arbre: ${G.nodes[step.u].label}→${G.nodes[step.v].label}`,'log-relax');}
+    else if(step.type==='back'){es[step.eid]='back';addLog('dfs-log',`Arête arrière: ${G.nodes[step.u].label}→${G.nodes[step.v].label} CYCLE`,'log-back');document.getElementById('dfs-cycle').textContent='OUI';}
+    else if(step.type==='comp'){compC=step.comp;document.getElementById('dfs-comp').textContent=compC;}
+    else if(step.type==='done'){addLog('dfs-log',`✓ DFS terminé. Cycle:${step.cycleFound?'oui':'non'}`,'log-done');}
+    drawGraph(ctx,G.nodes,G.edges,{nodeState:[...ns],edgeState:{...es},directed:G.directed});
+  },getSpeed('dfs'));
+}
+
+function dfsTopoSort(){
+  const s=gState['dfs'];if(!s)return;
+  addLog('dfs-log','--- Tri topologique (ordre décroissant de fin) ---','log-step');
+  // simple: run DFS, collect finish order
+  clearLog('dfs-log');
+  const {G}=s;const nN=G.nodes.length;
+  const color=Array(nN).fill(0);
+  const finish=[];
+  function dv(u){color[u]=1;G.edges.forEach(e=>{let v=-1;if(e.u===u)v=e.v;if(v>=0&&color[v]===0)dv(v);});color[u]=2;finish.unshift(u);}
+  for(let u=0;u<nN;u++){if(color[u]===0)dv(u);}
+  addLog('dfs-log',`Ordre topo: ${finish.map(i=>G.nodes[i].label).join(' → ')}`,'log-done');
+}
+
+/* ═══════ DIJKSTRA ═══════ */
+let dijkSource=0;
+function dijkStart(){
+  const s=gState['dijkstra'];if(!s)return;
+  clearLog('dijk-log');
+  const {G}=s;const nN=G.nodes.length;
+  const dist=Array(nN).fill(Infinity);
+  const pred=Array(nN).fill(-1);
+  const final=Array(nN).fill(false);
+  dist[dijkSource]=0;
+  const steps=[];steps.push({type:'init',src:dijkSource,dist:[...dist]});
+  // collect steps
+  for(let iter=0;iter<nN;iter++){
+    let u=-1,minD=Infinity;
+    for(let v=0;v<nN;v++){if(!final[v]&&dist[v]<minD){minD=dist[v];u=v;}}
+    if(u===-1)break;
+    final[u]=true;
+    steps.push({type:'finalize',u,dist:[...dist]});
+    G.edges.forEach(e=>{
+      let v=-1,w=0;
+      if(e.u===u){v=e.v;w=e.w;}
+      else if(!G.directed&&e.v===u){v=e.u;w=e.w;}
+      if(v>=0&&!final[v]&&dist[u]+w<dist[v]){
+        dist[v]=dist[u]+w;pred[v]=u;
+        steps.push({type:'relax',u,v,eid:e.id,dist:[...dist],w});
+      }
+    });
+  }
+  steps.push({type:'done',dist:[...dist],pred:[...pred]});
+  s.steps=steps;s.stepIdx=0;
+  const ctx=getCtx('dijkstra');
+  const ns=Array(nN).fill('');const es={};
+  let rel=0,fin=0;
+  ns[dijkSource]='source';
+  if(s.timer)clearInterval(s.timer);
+  s.timer=setInterval(()=>{
+    if(s.stepIdx>=steps.length){clearInterval(s.timer);return;}
+    const step=steps[s.stepIdx++];
+    if(step.type==='init'){addLog('dijk-log',`Source: ${G.nodes[step.src].label}, dist=0`,'log-step');}
+    else if(step.type==='finalize'){if(step.u!==dijkSource)ns[step.u]='visited';fin++;document.getElementById('dijk-fin').textContent=fin;addLog('dijk-log',`Finalise ${G.nodes[step.u].label} dist=${step.dist[step.u]}`,'log-visit');}
+    else if(step.type==='relax'){es[step.eid]='active';ns[step.v]='current';rel++;document.getElementById('dijk-rel').textContent=rel;addLog('dijk-log',`Relax ${G.nodes[step.v].label}: ${step.dist[step.v]} (via ${G.nodes[step.u].label}+${step.w})`,'log-relax');}
+    else if(step.type==='done'){
+      addLog('dijk-log','✓ Dijkstra terminé','log-done');
+      const dt=document.getElementById('dijk-dist');
+      if(dt){dt.innerHTML='';step.dist.forEach((d,i)=>{const dc=document.createElement('div');dc.className='dist-cell'+(i===dijkSource?' source':d<Infinity?' reached':'');dc.textContent=`${G.nodes[i].label}:${d===Infinity?'∞':d}`;dt.appendChild(dc);});}
+    }
+    drawGraph(ctx,G.nodes,G.edges,{nodeState:[...ns],edgeState:{...es},directed:G.directed,dist:step.dist});
+  },getSpeed('dijk'));
+}
+
+/* ═══════ BELLMAN-FORD ═══════ */
+function bellmanStart(){
+  const s=gState['bellman'];if(!s)return;
+  clearLog('bell-log');
+  const {G}=s;const nN=G.nodes.length;
+  const dist=Array(nN).fill(Infinity);
+  dist[0]=0;
+  const steps=[];steps.push({type:'init',dist:[...dist]});
+  let passN=0;
+  for(let p=0;p<nN-1;p++){
+    passN++;let changed=false;
+    steps.push({type:'pass',p:passN});
+    G.edges.forEach(e=>{
+      if(dist[e.u]!==Infinity&&dist[e.u]+e.w<dist[e.v]){
+        dist[e.v]=dist[e.u]+e.w;changed=true;
+        steps.push({type:'relax',u:e.u,v:e.v,eid:e.id,dist:[...dist],w:e.w});
+      }
+    });
+    if(!changed)break;
+  }
+  // check negative cycle
+  let negCycle=false;
+  G.edges.forEach(e=>{if(dist[e.u]!==Infinity&&dist[e.u]+e.w<dist[e.v])negCycle=true;});
+  steps.push({type:'done',dist:[...dist],negCycle});
+  s.steps=steps;s.stepIdx=0;
+  const ctx=getCtx('bellman');
+  const ns=Array(nN).fill('');const es={};
+  ns[0]='source';let rel=0;
+  if(s.timer)clearInterval(s.timer);
+  s.timer=setInterval(()=>{
+    if(s.stepIdx>=steps.length){clearInterval(s.timer);return;}
+    const step=steps[s.stepIdx++];
+    if(step.type==='init'){addLog('bell-log','Init: dist[A]=0, reste=∞','log-step');}
+    else if(step.type==='pass'){document.getElementById('bell-pass').textContent=step.p;addLog('bell-log',`Passe ${step.p}/${nN-1}`,'log-step');}
+    else if(step.type==='relax'){es[step.eid]='active';ns[step.v]='current';rel++;document.getElementById('bell-rel').textContent=rel;addLog('bell-log',`Relax ${G.nodes[step.v].label}: ${step.dist[step.v]} (via ${G.nodes[step.u].label})`,'log-relax');}
+    else if(step.type==='done'){
+      const neg=step.negCycle;
+      document.getElementById('bell-neg').textContent=neg?'OUI ⚠':'Non';
+      addLog('bell-log',neg?'⚠ CYCLE NÉGATIF détecté !':'✓ Pas de cycle négatif','log-done');
+      const dt=document.getElementById('bell-dist');
+      if(dt){dt.innerHTML='';step.dist.forEach((d,i)=>{const dc=document.createElement('div');dc.className='dist-cell'+(i===0?' source':d<Infinity?' reached':'');dc.textContent=`${G.nodes[i].label}:${d===Infinity?'∞':d}`;dt.appendChild(dc);});}
+    }
+    drawGraph(ctx,G.nodes,G.edges,{nodeState:[...ns],edgeState:{...es},directed:G.directed,dist:step.dist});
+  },getSpeed('bell'));
+}
+
+function bellmanAddNeg(){
+  const s=gState['bellman'];if(!s)return;
+  // Add a negative edge to the graph
+  const G=s.G;
+  const newEdge={id:G.edges.length,u:3,v:0,w:-8};
+  G.edges.push(newEdge);
+  const ctx=getCtx('bellman');
+  drawGraph(ctx,G.nodes,G.edges,{nodeState:s.nodeState,edgeState:s.edgeState,directed:G.directed});
+  addLog('bell-log','Arête négative ajoutée : D→A w=-8','log-back');
+}
+
+/* ═══════ KRUSKAL ═══════ */
+function kruskalStart(){
+  const s=gState['kruskal'];if(!s)return;
+  clearLog('krus-log');
+  const {G}=s;const nN=G.nodes.length;
+  // Union-Find
+  const par=Array.from({length:nN},(_,i)=>i);
+  const rnk=Array(nN).fill(0);
+  function find(x){return par[x]===x?x:(par[x]=find(par[x]),par[x]);}
+  function unite(x,y){const rx=find(x),ry=find(y);if(rx===ry)return false;if(rnk[rx]<rnk[ry])par[rx]=ry;else if(rnk[rx]>rnk[ry])par[ry]=rx;else{par[ry]=rx;rnk[rx]++;}return true;}
+  const sorted=[...G.edges].sort((a,b)=>a.w-b.w);
+  const steps=[];let w=0,edgeCnt=0,rej=0;
+  sorted.forEach(e=>{
+    if(unite(e.u,e.v)){w+=e.w;edgeCnt++;steps.push({type:'add',eid:e.id,u:e.u,v:e.v,w:e.w,total:w,cnt:edgeCnt});}
+    else{rej++;steps.push({type:'rej',eid:e.id,u:e.u,v:e.v,w:e.w,rej});}
+  });
+  steps.push({type:'done',w,cnt:edgeCnt});
+  s.steps=steps;s.stepIdx=0;
+  const ctx=getCtx('kruskal');
+  const ns=Array(nN).fill('');const es={};
+  if(s.timer)clearInterval(s.timer);
+  s.timer=setInterval(()=>{
+    if(s.stepIdx>=steps.length){clearInterval(s.timer);return;}
+    const step=steps[s.stepIdx++];
+    if(step.type==='add'){
+      es[step.eid]='mst';ns[step.u]=ns[step.v]='mst';
+      document.getElementById('krus-edges').textContent=step.cnt;
+      document.getElementById('krus-w').textContent=step.total;
+      addLog('krus-log',`✓ Ajout (${G.nodes[step.u].label},${G.nodes[step.v].label}) w=${step.w} → poids=${step.total}`,'log-relax');
+    } else if(step.type==='rej'){
+      document.getElementById('krus-rej').textContent=step.rej;
+      addLog('krus-log',`✗ Rejet (${G.nodes[step.u].label},${G.nodes[step.v].label}) w=${step.w} (cycle)`,'log-back');
+    } else if(step.type==='done'){addLog('krus-log',`✓ ACM terminé. Poids total=${step.w}`,'log-done');}
+    drawGraph(ctx,G.nodes,G.edges,{nodeState:[...ns],edgeState:{...es},directed:false});
+  },getSpeed('krus'));
+}
+
+function primStart(){
+  const s=gState['kruskal'];if(!s)return;
+  clearLog('krus-log');
+  graphReset('kruskal'); // reset visual
+  setTimeout(()=>{
+    const {G}=gState['kruskal'];const nN=G.nodes.length;
+    const inMST=Array(nN).fill(false);
+    const key=Array(nN).fill(Infinity);
+    const pred=Array(nN).fill(-1);
+    key[0]=0;
+    const steps=[];let w=0,cnt=0;
+    for(let i=0;i<nN;i++){
+      let u=-1,minK=Infinity;
+      for(let v=0;v<nN;v++){if(!inMST[v]&&key[v]<minK){minK=key[v];u=v;}}
+      if(u===-1)break;
+      inMST[u]=true;
+      if(pred[u]>=0){
+        const e=G.edges.find(e=>(e.u===u&&e.v===pred[u])||(e.u===pred[u]&&e.v===u));
+        w+=key[u];cnt++;
+        steps.push({type:'add',u,v:pred[u],eid:e?e.id:-1,w:key[u],total:w,cnt});
+      }
+      G.edges.forEach(e=>{
+        let v=-1,ew=0;
+        if(e.u===u){v=e.v;ew=e.w;}else if(e.v===u){v=e.u;ew=e.w;}
+        if(v>=0&&!inMST[v]&&ew<key[v]){key[v]=ew;pred[v]=u;steps.push({type:'update',v,w:ew});}
+      });
+    }
+    steps.push({type:'done',w,cnt});
+    gState['kruskal'].steps=steps;gState['kruskal'].stepIdx=0;
+    const ctx=getCtx('kruskal');
+    const ns=Array(nN).fill('');const es={};
+    let edgeCnt=0,totW=0,rejCnt=0;
+    if(gState['kruskal'].timer)clearInterval(gState['kruskal'].timer);
+    gState['kruskal'].timer=setInterval(()=>{
+      if(gState['kruskal'].stepIdx>=steps.length){clearInterval(gState['kruskal'].timer);return;}
+      const step=steps[gState['kruskal'].stepIdx++];
+      if(step.type==='add'){
+        if(step.eid>=0)es[step.eid]='mst';ns[step.u]=ns[step.v]='mst';
+        edgeCnt=step.cnt;totW=step.total;
+        document.getElementById('krus-edges').textContent=edgeCnt;
+        document.getElementById('krus-w').textContent=totW;
+        addLog('krus-log',`Prim: ajout (${G.nodes[step.u].label},${G.nodes[step.v].label}) w=${step.w}`,'log-relax');
+      } else if(step.type==='update'){
+        addLog('krus-log',`Prim: update clé[${G.nodes[step.v].label}]=${step.w}`,'log-back');
+      } else if(step.type==='done'){
+        addLog('krus-log',`✓ Prim terminé. Poids total=${step.w}`,'log-done');
+      }
+      drawGraph(ctx,G.nodes,G.edges,{nodeState:[...ns],edgeState:{...es},directed:false});
+    },getSpeed('krus'));
+  },50);
+}
+
+/* ═══════ VIZ INIT & SWITCH ═══════ */
+let vizInited=false;
+function initViz(){
+  if(vizInited)return;vizInited=true;
+  ['bfs','dfs','dijkstra','bellman','kruskal'].forEach(t=>{initGraphViz(t);});
+}
+function showViz(name){
+  document.querySelectorAll('.vpanel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.vtab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('vp-'+name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+/* ═══════ LANG TABS ═══════ */
+function swLang(btn,prefix){
+  const parent=btn.closest('.sb');
+  btn.parentElement.querySelectorAll('.ltab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  const isC=btn.classList.contains('c-tab');
+  const c=parent.querySelector('#'+prefix+'-c');
+  const ml=parent.querySelector('#'+prefix+'-ml');
+  if(c)c.classList.toggle('active',isC);
+  if(ml)ml.classList.toggle('active',!isC);
+}
+
+/* ═══════ CODE SIMS ═══════ */
+const SIMS={
+  'bfs_dfs.c':`=== BFS depuis le sommet 0 ===
+  dist[0] = 0
+  dist[1] = 1
+  dist[2] = 1
+  dist[3] = 2
+  dist[4] = 2
+  dist[5] = 3
+  dist[6] = 4
+  Chemin 0→6 (dist=4) : 0 → 1 → 3 → 5 → 6
+  Chemin 0→5 (dist=3) : 0 → 1 → 3 → 5
+
+=== DFS ===
+  Cycle détecté : arête arrière 4→2
+  Timestamps (découverte/fin) :
+  v0 : d=0 f=13
+  v1 : d=1 f=12
+  v2 : d=2 f=5
+  v3 : d=6 f=11
+  v4 : d=7 f=10
+  v5 : d=8 f=9
+  v6 : d=3 f=4
+  Cycle : oui`,
+  'bfs_dfs.ml':`=== BFS depuis 0 ===
+  dist[0] = 0
+  dist[1] = 1
+  dist[2] = 1
+  dist[3] = 2
+  dist[4] = 2
+  dist[5] = 3
+  dist[6] = 4
+  Chemin 0→6 : 0 → 1 → 3 → 5 → 6
+
+=== DFS ===
+  Arête arrière 4→2 → cycle !
+  v0 : d=0 f=13
+  v1 : d=1 f=12
+  v2 : d=2 f=5
+  v3 : d=6 f=11
+  v4 : d=7 f=10
+  v5 : d=8 f=9
+  v6 : d=3 f=4
+  Cycle : oui`,
+  'dijkstra.c':`Initialisation : dist[0] = 0
+Finalise u=0 (dist=0)
+  Relaxation : dist[1] = 7 (via 0)
+  Relaxation : dist[4] = 2 (via 0)
+Finalise u=4 (dist=2)
+  Relaxation : dist[1] = 3 (via 4)  ← amélioration !
+  Relaxation : dist[3] = 10 (via 4)
+Finalise u=1 (dist=3)
+  Relaxation : dist[2] = 6 (via 1)
+  Relaxation : dist[5] = 7 (via 1)
+Finalise u=2 (dist=6)
+  Relaxation : dist[3] = 8 (via 2)
+Finalise u=5 (dist=7)
+  Relaxation : dist[6] = 10 (via 5)
+Finalise u=3 (dist=8)
+  Relaxation : dist[6] = 9 (via 3)  ← amélioration !
+Finalise u=6 (dist=9)
+
+Distances depuis 0 :
+  dist[0] = 0
+  dist[1] = 3
+  dist[2] = 6
+  dist[3] = 8
+  dist[4] = 2
+  dist[5] = 7
+  dist[6] = 9
+
+Chemin 0→3 (dist=8) : 0 → 4 → 1 → 2 → 3
+Chemin 0→5 (dist=7) : 0 → 4 → 1 → 5`,
+  'dijkstra.ml':`Distances depuis 0 :
+  dist[0] = 0
+  dist[1] = 3
+  dist[2] = 6
+  dist[3] = 8
+  dist[4] = 2
+  dist[5] = 7
+  dist[6] = 9
+
+Chemin 0→3 : 0 → 4 → 1 → 2 → 3 (dist=8)
+Chemin 0→5 : 0 → 4 → 1 → 5 (dist=7)`,
+  'bellman_floyd.c':`=== Bellman-Ford depuis 0 ===
+Pas de cycle négatif : oui
+  dist[0] = 0
+  dist[1] = 6
+  dist[2] = 7
+  dist[3] = 2
+  dist[4] = 4
+
+=== Floyd-Warshall (toutes paires) ===
+Matrice des distances :
+        0    1    2    3    4
+  0 |   0    6    7    2    4
+  1 |  11    0   13    8    5
+  2 |  10    8    0    7    4
+  3 |   2    8    9    0    6
+  4 |   9    5    6    7    0`,
+  'bellman_floyd.ml':`=== Bellman-Ford depuis 0 ===
+Pas de cycle négatif : oui
+  dist[0] = 0
+  dist[1] = 6
+  dist[2] = 7
+  dist[3] = 2
+  dist[4] = 4
+
+=== Floyd-Warshall ===
+        0    1    2    3    4
+  0 |   0    6    7    2    4
+  1 |  11    0   13    8    5
+  2 |  10    8    0    7    4
+  3 |   2    8    9    0    6
+  4 |   9    5    6    7    0`,
+  'kruskal.c':`=== Kruskal — ACM ===
+Arêtes triées par poids :
+  (1,2) w=1
+  (1,3) w=2
+  (2,4) w=2
+  (3,5) w=2
+  (0,2) w=3
+  (3,4) w=3
+  (0,1) w=4
+  (2,3) w=4
+  (5,3) w=6
+  (4,5) w=5
+
+Construction de l'ACM :
+  ✓ Ajout (1,2) w=1
+  ✓ Ajout (1,3) w=2
+  ✓ Ajout (2,4) w=2
+  ✓ Ajout (3,5) w=2
+  ✓ Ajout (0,2) w=3
+  ✗ Rejet (3,4) w=3 (cycle)
+  ✗ Rejet (0,1) w=4 (cycle)
+  ✗ Rejet (2,3) w=4 (cycle)
+
+Poids total de l'ACM : 10
+Nombre d'arêtes : 5 (= V-1 = 5)`,
+  'kruskal.ml':`=== Kruskal — ACM ===
+Arêtes triées par poids :
+  (1,2) w=1  (1,3) w=2  (2,4) w=2  (3,5) w=2  (0,2) w=3
+Construction de l'ACM :
+  ✓ Ajout (1,2) w=1
+  ✓ Ajout (1,3) w=2
+  ✓ Ajout (2,4) w=2
+  ✓ Ajout (3,5) w=2
+  ✓ Ajout (0,2) w=3
+  ✗ Rejet (3,4) w=3 (cycle)
+  ✗ Rejet (0,1) w=4 (cycle)
+Poids total ACM : 10
+Arêtes : 5 (= V-1 = 5)`,
+};
+
+function runCode(btn){
+  const b=btn.closest('.cb');
+  const fn=b.querySelector('.cfn').textContent.trim();
+  const out=b.querySelector('.co');
+  out.classList.remove('error');out.classList.add('visible');
+  out.textContent=SIMS[fn]||'(Simulation non disponible — compilez dans un terminal)';
+}
+function dlCode(btn,ext){
+  const b=btn.closest('.cb');
+  const code=b.querySelector('.ce').value;
+  const fn=b.querySelector('.cfn').textContent.trim()||'code'+ext;
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([code],{type:'text/plain'})),download:fn});
+  a.click();
+}
+function rstCode(btn){
+  const b=btn.closest('.cb');
+  const ta=b.querySelector('.ce');
+  ta.value=ta.getAttribute('data-def');
+  const out=b.querySelector('.co');
+  out.classList.remove('visible');out.textContent='';
+}
+document.querySelectorAll('.ce').forEach(ta=>ta.setAttribute('data-def',ta.value));
+
+/* ═══════ QCM ═══════ */
+const QS=[
+  {q:"Quelle est la complexité du BFS sur un graphe de V sommets et E arêtes ?",opts:["O(V²)","O(V+E)","O(E log V)","O(V·E)"],ans:1,exp:"BFS visite chaque sommet et chaque arête une seule fois → O(V+E)."},
+  {q:"Quelle est la précondition indispensable pour utiliser Dijkstra ?",opts:["Le graphe doit être acyclique","Tous les poids doivent être non négatifs","Le graphe doit être connexe","Tous les poids doivent être distincts"],ans:1,exp:"Dijkstra est incorrect dès qu'un poids est négatif — un arc négatif peut invalider la distance déjà finalisée d'un sommet."},
+  {q:"Bellman-Ford effectue exactement combien de passes sur les arêtes ?",opts:["E passes","V passes","V−1 passes (puis 1 de vérification)","log(V) passes"],ans:2,exp:"V−1 passes suffisent pour propager le chemin le plus long possible (V−1 arêtes). La V-ième passe détecte les cycles négatifs."},
+  {q:"Comment Floyd-Warshall détecte-t-il un cycle négatif ?",opts:["En vérifiant d[i][j] < 0 pour i≠j","En vérifiant d[i][i] < 0 pour un sommet i","En comptant les relaxations","En comparant avec Bellman-Ford"],ans:1,exp:"Après Floyd-Warshall, si d[i][i] < 0 pour un sommet i, alors i appartient à un cycle de poids négatif."},
+  {q:"Dans l'algorithme de Kruskal, l'Union-Find est utilisé pour :",opts:["Trier les arêtes par poids","Vérifier si une arête crée un cycle (même composante)","Stocker les distances","Trouver le sommet de degré minimum"],ans:1,exp:"On utilise Union-Find pour vérifier en quasi O(1) si les deux extrémités d'une arête sont dans la même composante connexe (= cycle si on l'ajoute)."},
+  {q:"Quelle représentation est la plus efficace pour un graphe CREUX (E << V²) ?",opts:["Matrice d'adjacence — O(1) accès arête","Listes d'adjacence — O(V+E) espace","Matrice d'incidence","Matrice de poids"],ans:1,exp:"Pour un graphe creux, la matrice d'adjacence gaspille O(V²) espace pour stocker de nombreux zéros. Les listes n'allouent que O(V+E)."},
+  {q:"Le tri topologique d'un DAG par DFS consiste à :",opts:["Trier par ordre de découverte (croissant)","Trier par ordre de fin (décroissant)","Trier par degré entrant","Utiliser BFS niveau par niveau"],ans:1,exp:"On empile chaque sommet quand on le quitte (fin DFS), puis on lit la pile → ordre topologique. Équivalent à trier par f[u] décroissant."},
+  {q:"Quelle est la complexité de Dijkstra avec un tas min (file de priorité) ?",opts:["O(V²)","O(E·V)","O((V+E) log V)","O(V log V)"],ans:2,exp:"Avec un tas min, chaque extraction coûte O(log V) et chaque relaxation (decreaseKey) coûte O(log V). Au total : O((V+E) log V)."},
+  {q:"Le théorème de la coupe (cut property) justifie la correction de :",opts:["BFS et DFS","Bellman-Ford et Floyd-Warshall","Kruskal et Prim","Dijkstra et Bellman-Ford"],ans:2,exp:"La cut property dit que l'arête de poids minimal d'une coupe appartient à tout ACM. C'est la base de la preuve de Kruskal et Prim."},
+  {q:"Un arbre couvrant minimal d'un graphe de V sommets contient exactement :",opts:["V arêtes","V−1 arêtes","E arêtes","V/2 arêtes"],ans:1,exp:"Un arbre à V sommets a exactement V−1 arêtes. C'est une propriété fondamentale des arbres."},
+  {q:"Quelle est la complexité de Floyd-Warshall ?",opts:["O(V+E)","O(V·E)","O(V²)","O(V³)"],ans:3,exp:"Floyd-Warshall utilise trois boucles imbriquées sur V sommets → O(V³). Efficace pour les graphes denses, impraticable pour les très grands graphes."},
+  {q:"Une arête arrière dans le DFS indique :",opts:["Une arête de l'arbre DFS","Un cycle dans le graphe","Une arête vers un sommet non découvert","Une arête transversale"],ans:1,exp:"Une arête (u,v) est une arête arrière si v est un ancêtre de u dans l'arbre DFS (v est encore gris). Elle crée un cycle."},
+];
+
+function initQCM(){
+  const wrap=document.getElementById('qcm');
+  if(!wrap||wrap.innerHTML!=='')return;
+  let shuffled=[...QS].sort(()=>Math.random()-.5);
+  let cur=0,score=0,answered=[];
+  function render(){
+    if(cur>=shuffled.length){
+      const pct=Math.round(score/shuffled.length*100);
+      wrap.innerHTML=`<div class="qp">Score final</div>
+        <div style="font-family:var(--cond);font-size:2rem;color:var(--accent);margin:.45rem 0">${score} / ${shuffled.length}</div>
+        <div class="sbar"><div class="sfill" style="width:${pct}%"></div></div>
+        <div style="font-family:var(--mono);font-size:.76rem;color:var(--dim);margin-bottom:.9rem">${pct}%</div>
+        <button class="btn bt" onclick="document.getElementById('qcm').innerHTML='';initQCM()">🔀 Nouveau QCM</button>`;
+      return;
+    }
+    const q=shuffled[cur];const done=answered[cur]!==undefined;
+    const opts=q.opts.map((o,i)=>{
+      let cls='';if(done){if(i===q.ans)cls='correct';else if(i===answered[cur]&&i!==q.ans)cls='wrong';}
+      return `<label class="qo ${cls}"><input type="radio" name="q" value="${i}" ${done?'disabled':''} ${done&&i===answered[cur]?'checked':''}> ${o}</label>`;
+    }).join('');
+    wrap.innerHTML=`<div class="qp">${cur+1} / ${shuffled.length} — Score : ${score}</div>
+      <div class="qq"><p>${q.q}</p>${opts}${done?`<div class="qex">${q.exp}</div>`:''}</div>
+      <div class="qctrl">${!done?`<button class="btn bt" onclick="submitA()">Valider</button>`:''}${done?`<button class="btn bb" onclick="nextQ()">${cur<shuffled.length-1?'Suivant →':'Résultat'}</button>`:''}</div>`;
+  }
+  window.submitA=function(){const sel=document.querySelector('input[name="q"]:checked');if(!sel)return;const v=parseInt(sel.value);answered[cur]=v;if(v===shuffled[cur].ans)score++;render();};
+  window.nextQ=function(){cur++;render();};
+  render();
+}
+</script>
+</body>
+</html>
